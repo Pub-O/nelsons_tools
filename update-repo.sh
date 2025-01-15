@@ -12,4 +12,6 @@ else
     git pull
 fi
 
-chmod +x update-repo.sh
+cp update-repo.sh ../update-repo.sh
+
+chmod +x ../update-repo.sh
