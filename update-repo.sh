@@ -11,3 +11,5 @@ else
     echo "Updating Repo!"
     git pull
 fi
+
+chmod +x update-repo.sh
