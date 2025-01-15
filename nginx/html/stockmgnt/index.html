@@ -6,176 +6,223 @@
     crossorigin="anonymous"></script>
 <meta charset="UTF-8">
 <script type="text/javascript" src="../js/calculateStock.js"></script>
+
 <head>
 </head>
+
 <body>
-    <nav class="navbar navbar-dark bg-dark">
-        <a class="navbar-brand" href="../index.html" style="margin-left: 10px;">
+    <nav class="navbar navbar-dark bg-dark navbar-expand-lg">
+        <a class="navbar-brand ms-2" href="../index.html">
             <img src="../img/Nelsons_HiRes_Circle_Only-1.png" width="38" height="30" class="d-inline-block align-top"
                 alt="">
             Pub-O</a>
-            <a class="navbar-text me-auto" href="#">
-                V0.1
-            </a>
+        <a class="navbar-text me-auto" href="#">
+            V0.1
+        </a>
     </nav>
-    <nav aria-label="breadcrumb" style="margin: 2%;">
-        <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="../index.html">Home</a></li>
-          <li class="breadcrumb-item active" aria-current="page">Stock-Helper</li>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mx-3 my-3">
+            <li class="breadcrumb-item"><a href="../index.html">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Stock-Helper</li>
         </ol>
-      </nav>
-    <div class="card" style="margin: 0.5%;">
-        <div class="container-fluid" style="margin-top: 25px;">
-            <div class="row" style="margin-bottom: 10px;">
-                <div class="col">
+    </nav>
+    <div class="container-sm mt-3">
+        <div class="card mx-2">
+            <div class="row mb-2">
+                <div class="col-md-3">
                     <h5 class="text-center">Kassenstand</h5>
                 </div>
-                <div class="col">
+                <div class="col-md-3">
                     <h5 class="text-center">Lagerstand</h5>
                 </div>
-                <div class="col"></div>
-                <div class="col"></div>
+                <div class="col-md-auto"></div>
+                <div class="col-md-auto"></div>
             </div>
-            <div class="row" style="margin-top: 10px; margin-bottom: 10px;">
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputWineKassa" onchange="calculateStock()" placeholder="Wine">
+            <div class="row my-2">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputWineKassa" onchange="calculateStock()"
+                        placeholder="Wine">
                 </div>
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputWineZahler" onchange="calculateStock()" placeholder="Wine">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputWineZahler" onchange="calculateStock()"
+                        placeholder="Wine">
                 </div>
-                <div class="col">
+                <div class="col-md-2">
+                    <button class="btn btn-dark overflow-hidden w-100">Wine</button>
+                </div>
+                <div class="col-md-auto">
                     <img src="../img/pitcher.png" width="30" height="30" class="d-inline-block align-top" alt="">
                     <span class="lead" id="wineP"></span>
                 </div>
-                <div class="col">
+                <div class="col-md-auto">
                     <img src="../img/glas.png" width="30" height="30" class="d-inline-block align-top" alt="">
                     <span class="lead" id="wineG"></span>
                 </div>
             </div>
-            <div class="row" style="margin-top: 10px; margin-bottom: 10px;">
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputGosserKassa" onchange="calculateStock()" placeholder="Gösser">
+            <div class="row my-2">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputGosserKassa" onchange="calculateStock()"
+                        placeholder="Gösser">
                 </div>
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputGosserZahler" onchange="calculateStock()" placeholder="Gösser">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputGosserZahler" onchange="calculateStock()"
+                        placeholder="Gösser">
                 </div>
-                <div class="col">
+                <div class="col-md-2">
+                    <button class="btn btn-dark overflow-hidden w-100">Gösser</button>
+                </div>
+                <div class="col-md-auto">
                     <img src="../img/pitcher.png" width="30" height="30" class="d-inline-block align-top" alt="">
                     <span class="lead" id="gosP"></span>
                 </div>
-                <div class="col">
+                <div class="col-md-auto">
                     <img src="../img/glas.png" width="30" height="30" class="d-inline-block align-top" alt="">
                     <span class="lead" id="gosG"></span>
                 </div>
             </div>
-            <div class="row" style="margin-top: 10px; margin-bottom: 10px;">
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputCiderKassa" onchange="calculateStock()" placeholder="Cider">
+            <div class="row my-2">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputCiderKassa" onchange="calculateStock()"
+                        placeholder="Cider">
                 </div>
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputCiderZahler" onchange="calculateStock()" placeholder="Cider">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputCiderZahler" onchange="calculateStock()"
+                        placeholder="Cider">
                 </div>
-                <div class="col">
+                <div class="col-md-2">
+                    <button class="btn btn-dark overflow-hidden w-100">Cider</button>
+                </div>
+                <div class="col-md-auto">
                     <img src="../img/pitcher.png" width="30" height="30" class="d-inline-block align-top" alt="">
                     <span class="lead" id="cidP"></span>
                 </div>
-                <div class="col">
+                <div class="col-md-auto">
                     <img src="../img/glas.png" width="30" height="30" class="d-inline-block align-top" alt="">
                     <span class="lead" id="cidG"></span>
                 </div>
             </div>
-            <div class="row" style="margin-top: 10px; margin-bottom: 10px;">
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputStieglKassa" onchange="calculateStock()" placeholder="Stiegl">
+            <div class="row my-2">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputStieglKassa" onchange="calculateStock()"
+                        placeholder="Stiegl">
                 </div>
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputStieglZahler" onchange="calculateStock()" placeholder="Stiegl">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputStieglZahler" onchange="calculateStock()"
+                        placeholder="Stiegl">
                 </div>
-                <div class="col">
+                <div class="col-md-2">
+                    <button class="btn btn-dark overflow-hidden w-100">Stiegl</button>
+                </div>
+                <div class="col-md-auto">
                     <img src="../img/pitcher.png" width="30" height="30" class="d-inline-block align-top" alt="">
                     <span class="lead" id="stieP"></span>
                 </div>
-                <div class="col">
+                <div class="col-md-auto">
                     <img src="../img/glas.png" width="30" height="30" class="d-inline-block align-top" alt="">
                     <span class="lead" id="stieG"></span>
                 </div>
             </div>
-            <div class="row" style="margin-top: 10px; margin-bottom: 10px;">
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputThalheimKassa" onchange="calculateStock()" placeholder="Thalheim">
+            <div class="row my-2">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputThalheimKassa" onchange="calculateStock()"
+                        placeholder="Thalheim">
                 </div>
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputThalheimZahler" onchange="calculateStock()" placeholder="Thalheim">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputThalheimZahler" onchange="calculateStock()"
+                        placeholder="Thalheim">
                 </div>
-                <div class="col">
+                <div class="col-md-2">
+                    <button class="btn btn-dark overflow-hidden w-100">Thalheim</button>
+                </div>
+                <div class="col-md-auto">
                     <img src="../img/pitcher.png" width="30" height="30" class="d-inline-block align-top" alt="">
                     <span class="lead" id="thalP"></span>
                 </div>
-                <div class="col">
+                <div class="col-md-auto">
                     <img src="../img/glas.png" width="30" height="30" class="d-inline-block align-top" alt="">
                     <span class="lead" id="thalG"></span>
                 </div>
             </div>
-            <div class="row" style="margin-top: 10px; margin-bottom: 10px;">
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputStaroKassa" onchange="calculateStock()" placeholder="Staro">
+            <div class="row my-2">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputStaroKassa" onchange="calculateStock()"
+                        placeholder="Staro">
                 </div>
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputStaroZahler" onchange="calculateStock()" placeholder="Staro">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputStaroZahler" onchange="calculateStock()"
+                        placeholder="Staro">
                 </div>
-                <div class="col">
+                <div class="col-md-2">
+                    <button class="btn btn-dark overflow-hidden w-100">Staro</button>
+                </div>
+                <div class="col-md-auto">
                     <img src="../img/pitcher.png" width="30" height="30" class="d-inline-block align-top" alt="">
                     <span class="lead" id="starP"></span>
                 </div>
-                <div class="col">
+                <div class="col-md-auto">
                     <img src="../img/glas.png" width="30" height="30" class="d-inline-block align-top" alt="">
                     <span class="lead" id="starG"></span>
                 </div>
             </div>
-            <div class="row" style="margin-top: 10px; margin-bottom: 10px;">
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputKilkennyKassa" onchange="calculateStock()" placeholder="Kilkenny">
+            <div class="row my-2">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputKilkennyKassa" onchange="calculateStock()"
+                        placeholder="Kilkenny">
                 </div>
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputKilkennyZahler" onchange="calculateStock()" placeholder="Kilkenny">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputKilkennyZahler" onchange="calculateStock()"
+                        placeholder="Kilkenny">
                 </div>
-                <div class="col">
+                <div class="col-md-2">
+                    <button class="btn btn-dark overflow-hidden w-100">Kilkenny</button>
+                </div>
+                <div class="col-md-auto">
                     <img src="../img/pitcher.png" width="30" height="30" class="d-inline-block align-top" alt="">
                     <span class="lead" id="kilP"></span>
                 </div>
-                <div class="col">
+                <div class="col-md-auto">
                     <img src="../img/glas.png" width="30" height="30" class="d-inline-block align-top" alt="">
                     <span class="lead" id="kilG"></span>
                 </div>
             </div>
-            <div class="row" style="margin-top: 10px; margin-bottom: 10px;">
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputHopHouseKassa" onchange="calculateStock()" placeholder="HopHouse">
+            <div class="row my-2">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputHopHouseKassa" onchange="calculateStock()"
+                        placeholder="HopHouse">
                 </div>
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputHopHouseZahler" onchange="calculateStock()" placeholder="HopHouse">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputHopHouseZahler" onchange="calculateStock()"
+                        placeholder="HopHouse">
                 </div>
-                <div class="col">
+                <div class="col-md-2">
+                    <button class="btn btn-dark overflow-hidden w-100">Hop</button>
+                </div>
+                <div class="col-md-auto">
                     <img src="../img/pitcher.png" width="30" height="30" class="d-inline-block align-top" alt="">
                     <span class="lead" id="hopP"></span>
                 </div>
-                <div class="col">
+                <div class="col-md-auto">
                     <img src="../img/glas.png" width="30" height="30" class="d-inline-block align-top" alt="">
                     <span class="lead" id="hopG"></span>
                 </div>
             </div>
-            <div class="row" style="margin-top: 10px; margin-bottom: 10px;">
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputGuinnessKassa" onchange="calculateStock()" placeholder="Guinness">
+            <div class="row my-2">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputGuinnessKassa" onchange="calculateStock()"
+                        placeholder="Guinness">
                 </div>
-                <div class="col">
-                    <input type="tel" class="form-control" id="InputGuinnessZahler" onchange="calculateStock()" placeholder="Guinness">
+                <div class="col-md-3">
+                    <input type="tel" class="form-control" id="InputGuinnessZahler" onchange="calculateStock()"
+                        placeholder="Guinness">
                 </div>
-                <div class="col">
+                <div class="col-md-2">
+                    <button class="btn btn-dark overflow-hidden w-100">Guinnes</button>
+                </div>
+                <div class="col-md-auto">
                     <img src="../img/glas.png" width="30" height="30" class="d-inline-block align-top" alt="">
                     <span class="lead" id="guinG"></span>
                 </div>
-                <div class="col"></div>
+                <div class="col-md-auto"></div>
             </div>
         </div>
     </div>
