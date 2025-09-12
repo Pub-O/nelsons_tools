@@ -16,7 +16,7 @@ function calculateStock() {
     wineK = document.getElementById('InputWineKassa').value;
     wineZ = document.getElementById('InputWineZahler').value;
     wineP = Math.floor((wineZ-wineK)/6);
-    wineG = (wineZ-wineK) % 3;
+    wineG = Math.floor(((wineZ - wineK) % 6) / 3);
 
     gossK = document.getElementById('InputGosserKassa').value;
     gossZ = document.getElementById('InputGosserZahler').value;
