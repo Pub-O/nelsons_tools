@@ -46,40 +46,46 @@ npm start
  `thalheim`, `staro`, `kilkenny`, `hophouse` und `guinness` an. Für den produktiven Einsatz kann ein Reverse Proxy (z. B.
  Nginx) genutzt werden, um die API unter dem gleichen Host wie die statischen Dateien erreichbar zu machen.
 
-### Betrieb im Docker-Setup mit Nginx
+### Schritt-für-Schritt-Anleitung: Betrieb mit Nginx und Docker
 
-Für den Einsatz in einer Container-Umgebung stellt dieses Repository vorbereitete Konfigurationsdateien bereit:
+Die folgenden Schritte führen von einer leeren Umgebung zur lauffähigen Anwendung. Sie können vollständig mit Docker
+und Docker Compose umgesetzt werden.
+
+1. **Repository auschecken**
+   ```bash
+   git clone <repo-url>
+   cd nelsons_tools
+   ```
+2. **Umgebungsvariablen festlegen** (optional): Legen Sie falls nötig eine Datei `.env` neben der `docker-compose.yml`
+   an, um Datenbankzugang oder Ports zu überschreiben (siehe Tabelle oben).
+3. **PostgreSQL-Instanz bereitstellen**: Standardmäßig erwartet das Backend eine Datenbank im Container
+   `nelsons-tools-db-1`. Wenn Sie bereits eine Instanz haben, passen Sie entweder den Hostnamen in der Datenbank an
+   oder überschreiben `DB_HOST` in Schritt 2.
+4. **Container starten**
+   ```bash
+   docker compose up -d
+   ```
+   Docker Compose baut das Backend-Image aus `server/Dockerfile`, startet den Backend-Container, Nginx und – falls
+   benötigt – die optionale PostgreSQL-Datenbank.
+5. **Datenbank prüfen**: Sobald der Backend-Container läuft, legt er automatisch die Tabelle `lagerstand` an. Sie
+   können die Struktur beispielsweise mit `docker exec -it nelsons-tools-db-1 psql -U postgres -d nelsons-tools -c
+   "\d lagerstand"` kontrollieren.
+6. **Anwendung aufrufen**: Öffnen Sie `http://localhost:8080`. Nginx liefert die statischen Dateien aus `nginx/html`
+   und leitet API-Requests nach `/api/` an das Backend unter `http://backend:3000` weiter.
+7. **Logs kontrollieren** (optional): Nutzen Sie `docker compose logs -f backend` bzw. `docker compose logs -f nginx`,
+   um sicherzustellen, dass die Services fehlerfrei arbeiten.
+
+### Details zur Container-Konfiguration
+
+Für den Betrieb in einer Container-Umgebung stellt dieses Repository vorbereitete Konfigurationsdateien bereit:
 
 - `server/Dockerfile` baut das Node.js-Backend als schlankes Container-Image.
 - `nginx/default.conf` konfiguriert Nginx so, dass statische Dateien ausgeliefert und API-Aufrufe an das Backend
   weitergeleitet werden.
 - `docker-compose.yml` startet Nginx, das Backend sowie (optional) eine PostgreSQL-Instanz im selben Docker-Netzwerk.
 
-#### Schnellstart mit Docker Compose
-
-```bash
-docker compose up -d
-```
-
-Der Befehl baut das Backend-Image, startet alle Services und macht die Anwendung unter `http://localhost:8080`
-erreichbar. Die API wird vom Nginx-Container automatisch an den Backend-Container (`http://backend:3000`) weitergeleitet.
-
-#### Einbindung in bestehende Umgebungen
-
-Wenn bereits ein Nginx-Container im Einsatz ist, können folgende Schritte übernommen werden:
-
-1. Backend-Image bauen und starten:
-   ```bash
-   docker build -t nelsons-tools-backend -f server/Dockerfile .
-   docker run -d --name nelsons-tools-backend --network <gemeinsames-netzwerk> \
-     -e DB_HOST=nelsons-tools-db-1 -e DB_NAME=nelsons-tools -e DB_USER=postgres -e DB_PASSWORD=postgres \
-     nelsons-tools-backend
-   ```
-2. Den Nginx-Container in dasselbe Docker-Netzwerk hängen (oder Nginx neu starten und das `nginx/default.conf`
-   verwenden). Wichtig ist die Proxy-Weiterleitung der Route `/api/` an `http://nelsons-tools-backend:3000`.
-3. Sicherstellen, dass der Datenbank-Container den Hostnamen `nelsons-tools-db-1` trägt oder die Umgebungsvariable
-   `DB_HOST` im Backend entsprechend angepasst wird.
-
-Damit stehen die statischen Inhalte weiterhin über Nginx zur Verfügung und alle API-Anfragen der Webseite werden
-transparent an das Backend übergeben, welches die Einträge in der Tabelle `lagerstand` ablegt.
+Wenn Sie bereits einen eigenen Nginx-Container einsetzen, können Sie die obige Schritt-für-Schritt-Anleitung ab Schritt
+3 verwenden und lediglich Schritt 4 anpassen: Starten Sie den Backend-Container mit `docker build`/`docker run` wie
+gezeigt und binden Sie Ihren bestehenden Nginx in dasselbe Docker-Netzwerk ein. Wichtig ist, dass Anfragen an `/api/`
+an `http://nelsons-tools-backend:3000` weitergeleitet werden und das Backend Zugriff auf die PostgreSQL-Datenbank hat.
 
