@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: nelsons-tools-nginx
+    volumes:
+      - ./nginx/html:/usr/share/nginx/html:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - nelsons-tools
+
+  backend:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: nelsons-tools-backend
+    environment:
+      DB_HOST: nelsons-tools-db-1
+      DB_PORT: 5432
+      DB_NAME: nelsons-tools
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      PORT: 3000
+    networks:
+      - nelsons-tools
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: nelsons-tools-db-1
+    environment:
+      POSTGRES_DB: nelsons-tools
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - nelsons-tools
+
+networks:
+  nelsons-tools:
+    driver: bridge
+
+volumes:
+  postgres-data:

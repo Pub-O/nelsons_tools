@@ -46,3 +46,40 @@ npm start
  `thalheim`, `staro`, `kilkenny`, `hophouse` und `guinness` an. Für den produktiven Einsatz kann ein Reverse Proxy (z. B.
  Nginx) genutzt werden, um die API unter dem gleichen Host wie die statischen Dateien erreichbar zu machen.
 
+### Betrieb im Docker-Setup mit Nginx
+
+Für den Einsatz in einer Container-Umgebung stellt dieses Repository vorbereitete Konfigurationsdateien bereit:
+
+- `server/Dockerfile` baut das Node.js-Backend als schlankes Container-Image.
+- `nginx/default.conf` konfiguriert Nginx so, dass statische Dateien ausgeliefert und API-Aufrufe an das Backend
+  weitergeleitet werden.
+- `docker-compose.yml` startet Nginx, das Backend sowie (optional) eine PostgreSQL-Instanz im selben Docker-Netzwerk.
+
+#### Schnellstart mit Docker Compose
+
+```bash
+docker compose up -d
+```
+
+Der Befehl baut das Backend-Image, startet alle Services und macht die Anwendung unter `http://localhost:8080`
+erreichbar. Die API wird vom Nginx-Container automatisch an den Backend-Container (`http://backend:3000`) weitergeleitet.
+
+#### Einbindung in bestehende Umgebungen
+
+Wenn bereits ein Nginx-Container im Einsatz ist, können folgende Schritte übernommen werden:
+
+1. Backend-Image bauen und starten:
+   ```bash
+   docker build -t nelsons-tools-backend -f server/Dockerfile .
+   docker run -d --name nelsons-tools-backend --network <gemeinsames-netzwerk> \
+     -e DB_HOST=nelsons-tools-db-1 -e DB_NAME=nelsons-tools -e DB_USER=postgres -e DB_PASSWORD=postgres \
+     nelsons-tools-backend
+   ```
+2. Den Nginx-Container in dasselbe Docker-Netzwerk hängen (oder Nginx neu starten und das `nginx/default.conf`
+   verwenden). Wichtig ist die Proxy-Weiterleitung der Route `/api/` an `http://nelsons-tools-backend:3000`.
+3. Sicherstellen, dass der Datenbank-Container den Hostnamen `nelsons-tools-db-1` trägt oder die Umgebungsvariable
+   `DB_HOST` im Backend entsprechend angepasst wird.
+
+Damit stehen die statischen Inhalte weiterhin über Nginx zur Verfügung und alle API-Anfragen der Webseite werden
+transparent an das Backend übergeben, welches die Einträge in der Tabelle `lagerstand` ablegt.
+
