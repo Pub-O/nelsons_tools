@@ -73,9 +73,9 @@ function calculateStock() {
         { name: 'Wine', stock: wineZ, pitchers: wineP, glasses: wineG },
         { name: 'Gösser', stock: gossZ, pitchers: gossP, glasses: gossG },
         { name: 'Cider', stock: cidZ, pitchers: cidP, glasses: cidG },
-        { name: 'Stiegl', stock: stieZ, pitchers: stieP, glasses: stieG },
+        { name: 'Staro', stock: stieZ, pitchers: stieP, glasses: stieG },
         { name: 'Thalheim', stock: thalZ, pitchers: thalP, glasses: thalG },
-        { name: 'Staro', stock: starZ, pitchers: starP, glasses: starG },
+        { name: 'Free', stock: starZ, pitchers: starP, glasses: starG },
         { name: 'Kilkenny', stock: kilZ, pitchers: kilP, glasses: kilG },
         { name: 'Hop', stock: hopZ, pitchers: hopP, glasses: hopG },
         { name: 'Guinness', stock: guinZ, pitchers: 0, glasses: guinG }
@@ -201,5 +201,3 @@ function renderSummaryPage() {
     totalPitchers.textContent = summary.totals.pitchers;
     totalGlasses.textContent = summary.totals.glasses;
 }
-
-
