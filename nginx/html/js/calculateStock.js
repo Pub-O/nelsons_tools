@@ -202,4 +202,3 @@ function renderSummaryPage() {
     totalGlasses.textContent = summary.totals.glasses;
 }
 
-
