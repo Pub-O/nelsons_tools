@@ -429,6 +429,11 @@ h2 {
   color: #68736f;
 }
 
+.compact-summary {
+  box-shadow: none;
+  padding: 10px;
+}
+
 .select-row {
   padding: 14px;
 }

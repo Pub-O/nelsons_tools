@@ -264,7 +264,7 @@ function App() {
         for (const item of result.stockItems) {
           const quantityPerPoint = Number(item.product.easyCountUnitQty ?? 1) || 1;
           const currentPoints = Math.round(Number(item.quantity ?? 0) / quantityPerPoint);
-          next[item.product.id] = next[item.product.id] ?? {
+          next[item.product.id] = {
             startingCount: String(currentPoints),
             targetCount: String(currentPoints),
             registerCount: String(currentPoints)
@@ -502,10 +502,16 @@ function App() {
     }
 
     const lines = easyCountProducts.map((product) => {
-      const values = easyCounts[product.id] ?? { startingCount: '0', targetCount: '0', registerCount: '0' };
+      const quantityPerPoint = Number(product.easyCountUnitQty ?? 1) || 1;
+      const lastCount = Math.round(product.current / quantityPerPoint);
+      const values = easyCounts[product.id] ?? {
+        startingCount: String(lastCount),
+        targetCount: String(lastCount),
+        registerCount: String(lastCount)
+      };
       return {
         productId: product.id,
-        startingCount: Number(values.startingCount || 0),
+        startingCount: lastCount,
         targetCount: Number(values.targetCount || 0),
         registerCount: Number(values.registerCount || 0)
       };
@@ -541,13 +547,13 @@ function App() {
       return;
     }
 
-    const lines = products.map((product) => ({
+    const lines = products.filter((product) => !product.isEasyCount).map((product) => ({
       productId: product.id,
       countedQty: Number(counts[product.id] || 0)
     }));
 
     if (!lines.length) {
-      setStatus('Bitte zuerst ein Produkt anlegen.');
+      setStatus('Bitte zuerst ein reguläres Stock-Produkt anlegen.');
       return;
     }
 
@@ -591,7 +597,16 @@ function App() {
       <section className="content">
         {status && <div className="status-line">{status}</div>}
         {activeTab === 'dashboard' && <Dashboard lowStock={lowStock} productCount={products.length} />}
-        {activeTab === 'stock' && <Stock products={inventory} />}
+        {activeTab === 'stock' && (
+          <Stock
+            products={inventory}
+            counts={counts}
+            onCountChange={(productId, value) => setCounts((items) => ({ ...items, [productId]: value }))}
+            onCreateProduct={createProduct}
+            onUpdateProduct={updateProduct}
+            onSaveStockCount={saveStockCount}
+          />
+        )}
         {activeTab === 'shopping' && <Shopping lowStock={lowStock} />}
         {activeTab === 'easy-count' && (
           <EasyCount
@@ -617,6 +632,7 @@ function App() {
             onMonthChange={setScheduleMonth}
             onCreateShift={createShift}
             onCreateVacation={createVacation}
+            onCreateEmployee={createEmployee}
           />
         )}
         {activeTab === 'checklists' && <Checklists />}
@@ -626,15 +642,7 @@ function App() {
               user={user}
               locations={locations}
               activeLocationId={activeLocationId}
-              products={products}
-              employees={employees}
-              counts={counts}
               onLocationChange={setActiveLocationId}
-              onCountChange={(productId, value) => setCounts((items) => ({ ...items, [productId]: value }))}
-              onCreateProduct={createProduct}
-              onUpdateProduct={updateProduct}
-              onCreateEmployee={createEmployee}
-              onSaveStockCount={saveStockCount}
             />
           ) : (
             <AuthPanel onAuthenticated={handleAuthenticated} setStatus={setStatus} />
@@ -720,7 +728,21 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Stock({ products }: { products: Array<Product & { current: number; target: number }> }) {
+function Stock({
+  products,
+  counts,
+  onCountChange,
+  onCreateProduct,
+  onUpdateProduct,
+  onSaveStockCount
+}: {
+  products: Array<Product & { current: number; target: number }>;
+  counts: Record<string, string>;
+  onCountChange: (productId: string, value: string) => void;
+  onCreateProduct: (data: ProductFormData) => void;
+  onUpdateProduct: (productId: string, data: ProductFormData) => void;
+  onSaveStockCount: () => void;
+}) {
   return (
     <section className="section">
       <h2>Bestand</h2>
@@ -736,16 +758,46 @@ function Stock({ products }: { products: Array<Product & { current: number; targ
                   <strong>{product.name}</strong>
                   <span>{formatPackage(product)}</span>
                 </div>
-                <b>{product.current} {product.unit}</b>
+                <b>{formatAmount(product.current)} {formatUnitLabel(product.unit)}</b>
               </div>
               <div className="stock-meter">
                 <span style={{ width: `${percentage}%` }} />
               </div>
-              <small>Ziel: {product.target || '-'} {product.unit}</small>
+              <small>Ziel: {product.target || '-'} {formatUnitLabel(product.unit)}</small>
+              {product.isEasyCount && (
+                <small>Last Count: {formatAmount(product.current / (Number(product.easyCountUnitQty ?? 1) || 1))} Punkte · {formatPointDefinition(product)}</small>
+              )}
             </article>
           );
         })}
       </div>
+      <ProductForm onCreateProduct={onCreateProduct} />
+      <ProductEditor products={products} onUpdateProduct={onUpdateProduct} />
+      <section className="section">
+        <h2>Zählstand</h2>
+        <div className="count-list">
+          {products.filter((product) => !product.isEasyCount).length === 0 && <EmptyState text="Keine regulären Stock-Produkte angelegt." />}
+          {products.filter((product) => !product.isEasyCount).map((product) => (
+            <label className="count-row" key={product.id}>
+              <span>
+                <strong>{product.name}</strong>
+                <small>{formatPackage(product)}</small>
+              </span>
+              <input
+                type="number"
+                min="0"
+                step="0.001"
+                value={counts[product.id] ?? '0'}
+                onChange={(event) => onCountChange(product.id, event.target.value)}
+              />
+            </label>
+          ))}
+        </div>
+        <button className="primary-button" type="button" onClick={onSaveStockCount}>
+          <Save size={18} />
+          Zählstand speichern
+        </button>
+      </section>
     </section>
   );
 }
@@ -761,7 +813,7 @@ function Shopping({ lowStock }: { lowStock: Array<Product & { current: number; t
             <div>
               <strong>{product.name}</strong>
               <span>
-                {Math.max(0, product.target - product.current)} {product.unit} bis Zielbestand
+                {Math.max(0, product.target - product.current)} {formatUnitLabel(product.unit)} bis Zielbestand
               </span>
             </div>
             <input type="checkbox" aria-label={`${product.name} erledigt`} />
@@ -791,11 +843,16 @@ function EasyCount({
       <div className="count-list">
         {products.length === 0 && <EmptyState text="Aktiviere Easy Count zuerst bei einem Produkt." />}
         {products.map((product) => {
-          const row = values[product.id] ?? { startingCount: '0', targetCount: '0', registerCount: '0' };
+          const quantityPerPoint = Number(product.easyCountUnitQty ?? 1) || 1;
+          const lastCount = Math.round(product.current / quantityPerPoint);
+          const row = values[product.id] ?? {
+            startingCount: String(lastCount),
+            targetCount: String(lastCount),
+            registerCount: String(lastCount)
+          };
           const target = Number(row.targetCount || 0);
           const register = Number(row.registerCount || 0);
           const difference = target - register;
-          const quantityPerPoint = Number(product.easyCountUnitQty ?? 1) || 1;
           const correction = difference * quantityPerPoint;
 
           return (
@@ -803,17 +860,17 @@ function EasyCount({
               <div className="stock-title">
                 <div>
                   <strong>{product.name}</strong>
-                  <span>1 Punkt = {formatAmount(quantityPerPoint)} {product.unit}</span>
+                  <span>{formatPointDefinition(product)}</span>
                 </div>
                 <b>{difference >= 0 ? '+' : ''}{difference} Punkte</b>
               </div>
-              <div className="form-grid three">
+              <div className="admin-summary compact-summary">
+                <strong>Last Count</strong>
+                <span>{lastCount} Punkte Sollstand</span>
+              </div>
+              <div className="form-grid">
                 <label>
-                  Anfang
-                  <input type="number" min="0" step="1" value={row.startingCount} onChange={(event) => onChange(product.id, 'startingCount', event.target.value)} />
-                </label>
-                <label>
-                  Sollstand
+                  Lagerstand
                   <input type="number" min="0" step="1" value={row.targetCount} onChange={(event) => onChange(product.id, 'targetCount', event.target.value)} />
                 </label>
                 <label>
@@ -821,7 +878,7 @@ function EasyCount({
                   <input type="number" min="0" step="1" value={row.registerCount} onChange={(event) => onChange(product.id, 'registerCount', event.target.value)} />
                 </label>
               </div>
-              <small>Nachzubonnieren: {formatAmount(correction)} {product.unit}</small>
+              <small>Nachzubonnieren: {formatAmount(correction)} {formatUnitLabel(product.unit)}</small>
             </article>
           );
         })}
@@ -926,35 +983,19 @@ function AdminPanel({
   user,
   locations,
   activeLocationId,
-  products,
-  employees,
-  counts,
-  onLocationChange,
-  onCountChange,
-  onCreateProduct,
-  onUpdateProduct,
-  onCreateEmployee,
-  onSaveStockCount
+  onLocationChange
 }: {
   user: SessionUser | null;
   locations: Location[];
   activeLocationId: string;
-  products: Product[];
-  employees: Employee[];
-  counts: Record<string, string>;
   onLocationChange: (locationId: string) => void;
-  onCountChange: (productId: string, value: string) => void;
-  onCreateProduct: (data: ProductFormData) => void;
-  onUpdateProduct: (productId: string, data: ProductFormData) => void;
-  onCreateEmployee: (data: Omit<Employee, 'id'>) => void;
-  onSaveStockCount: () => void;
 }) {
   return (
     <section className="section">
       <h2>Admin</h2>
       <div className="admin-summary">
         <strong>{user?.name ?? 'Admin'}</strong>
-        <span>{products.length} Produkte verwaltet</span>
+        <span>Standort und Zugang aktiv.</span>
       </div>
       <label className="select-row">
         Standort
@@ -964,34 +1005,6 @@ function AdminPanel({
           ))}
         </select>
       </label>
-      <ProductForm onCreateProduct={onCreateProduct} />
-      <ProductEditor products={products} onUpdateProduct={onUpdateProduct} />
-      <EmployeeForm employees={employees} onCreateEmployee={onCreateEmployee} />
-      <section className="section">
-        <h2>Zählstand</h2>
-        <div className="count-list">
-          {products.length === 0 && <EmptyState text="Lege zuerst ein Produkt an." />}
-          {products.map((product) => (
-            <label className="count-row" key={product.id}>
-              <span>
-                <strong>{product.name}</strong>
-                <small>{formatPackage(product)}</small>
-              </span>
-              <input
-                type="number"
-                min="0"
-                step="0.001"
-                value={counts[product.id] ?? '0'}
-                onChange={(event) => onCountChange(product.id, event.target.value)}
-              />
-            </label>
-          ))}
-        </div>
-        <button className="primary-button" type="button" onClick={onSaveStockCount}>
-          <Save size={18} />
-          Zählstand speichern
-        </button>
-      </section>
     </section>
   );
 }
@@ -1003,10 +1016,10 @@ function ProductForm({
 }) {
   const [form, setForm] = useState({
     name: '',
-    unit: 'Stk',
+    unit: 'Stück',
     containerType: 'Stück',
     containerSize: '1',
-    containerUnit: 'Stk',
+    containerUnit: 'Stück',
     parLevel: '0',
     reorderPoint: '0',
     isEasyCount: false,
@@ -1057,11 +1070,11 @@ function ProductForm({
         <label>
           Größen-Einheit
           <select value={form.containerUnit} onChange={(event) => setForm({ ...form, containerUnit: event.target.value })}>
-            <option>l</option>
-            <option>ml</option>
-            <option>Stk</option>
-            <option>kg</option>
-            <option>g</option>
+            <option>Liter</option>
+            <option>Milliliter</option>
+            <option>Stück</option>
+            <option>Kilogramm</option>
+            <option>Gramm</option>
           </select>
         </label>
         <label>
@@ -1164,11 +1177,11 @@ function ProductEditor({
                   <label>
                     Größen-Einheit
                     <select value={form.containerUnit} onChange={(event) => setForm({ ...form, containerUnit: event.target.value })}>
-                      <option>l</option>
-                      <option>ml</option>
-                      <option>Stk</option>
-                      <option>kg</option>
-                      <option>g</option>
+                      <option>Liter</option>
+                      <option>Milliliter</option>
+                      <option>Stück</option>
+                      <option>Kilogramm</option>
+                      <option>Gramm</option>
                     </select>
                   </label>
                   <label>
@@ -1210,8 +1223,8 @@ function ProductEditor({
               <>
                 <div>
                   <strong>{product.name}</strong>
-                  <span>{formatPackage(product)} · Ziel {formatNullableAmount(product.parLevel)} {product.unit}</span>
-                  {product.isEasyCount && <small>Easy Count: 1 Punkt = {formatNullableAmount(product.easyCountUnitQty)} {product.unit}</small>}
+                  <span>{formatPackage(product)} · Ziel {formatNullableAmount(product.parLevel)} {formatUnitLabel(product.unit)}</span>
+                  {product.isEasyCount && <small>Easy Count: {formatPointDefinition(product)}</small>}
                 </div>
                 <button className="text-button compact-button" type="button" onClick={() => startEditing(product)} aria-label={`${product.name} bearbeiten`}>
                   <Pencil size={17} />
@@ -1332,7 +1345,8 @@ function Schedule({
   employees,
   onMonthChange,
   onCreateShift,
-  onCreateVacation
+  onCreateVacation,
+  onCreateEmployee
 }: {
   month: Date;
   shifts: Shift[];
@@ -1341,6 +1355,7 @@ function Schedule({
   onMonthChange: (month: Date) => void;
   onCreateShift: (data: { employeeId: string; date: string; startsAt: string; endsAt: string; title: string }) => void;
   onCreateVacation: (data: { employeeId: string; startsOn: string; endsOn: string; note: string }) => void;
+  onCreateEmployee: (data: Omit<Employee, 'id'>) => void;
 }) {
   const [shiftForm, setShiftForm] = useState({
     employeeId: employees[0]?.id ?? '',
@@ -1430,6 +1445,8 @@ function Schedule({
           );
         })}
       </div>
+
+      <EmployeeForm employees={employees} onCreateEmployee={onCreateEmployee} />
 
       <form className="form-card" onSubmit={submitShift}>
         <h2>Dienst eintragen</h2>
@@ -1531,7 +1548,7 @@ function EmptyState({ text }: { text: string }) {
 function formatPackage(product: Product) {
   const size = Number(product.containerSize ?? 0);
   const formattedSize = size > 0 ? ` ${Number.isInteger(size) ? size : size.toFixed(3).replace(/0+$/, '').replace(/\.$/, '')}` : '';
-  const unit = product.containerUnit ? ` ${product.containerUnit}` : '';
+  const unit = product.containerUnit ? ` ${formatUnitLabel(product.containerUnit)}` : '';
   return `${product.containerType ?? 'Stück'}${formattedSize}${unit}`;
 }
 
@@ -1547,15 +1564,45 @@ function formatNullableAmount(value: Product[keyof Product]) {
 function productToForm(product?: Product) {
   return {
     name: product?.name ?? '',
-    unit: product?.unit ?? 'Stk',
+    unit: formatUnitLabel(product?.unit ?? 'Stück'),
     containerType: product?.containerType ?? 'Stück',
     containerSize: String(product?.containerSize ?? '1'),
-    containerUnit: product?.containerUnit ?? 'Stk',
+    containerUnit: formatUnitLabel(product?.containerUnit ?? 'Stück'),
     parLevel: String(product?.parLevel ?? '0'),
     reorderPoint: String(product?.reorderPoint ?? '0'),
     isEasyCount: product?.isEasyCount ?? false,
     easyCountUnitQty: String(product?.easyCountUnitQty ?? '1')
   };
+}
+
+function formatUnitLabel(unit?: string | number | null) {
+  const value = String(unit ?? '').trim();
+  const labels: Record<string, string> = {
+    Stk: 'Stück',
+    stk: 'Stück',
+    pcs: 'Stück',
+    l: 'Liter',
+    L: 'Liter',
+    ml: 'Milliliter',
+    kg: 'Kilogramm',
+    g: 'Gramm'
+  };
+  return labels[value] ?? value;
+}
+
+function formatPointDefinition(product: Product) {
+  const unitQty = Number(product.easyCountUnitQty ?? 1) || 1;
+  const unit = formatUnitLabel(product.unit);
+  if (unit === 'Milliliter' && unitQty === 100) {
+    return '1 Punkt = 100 ml';
+  }
+  if (unit === 'Liter' && Math.abs(unitQty - 0.125) < 0.001) {
+    return '1 Punkt = 1/8 Liter';
+  }
+  if (unit === 'Milliliter' && unitQty === 20) {
+    return '1 Punkt = 2 cl';
+  }
+  return `1 Punkt = ${formatAmount(unitQty)} ${unit}`;
 }
 
 function startOfMonth(date: Date) {
