@@ -605,6 +605,60 @@ h2 {
   padding: 14px;
 }
 
+.module-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.module-plan-column {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.module-list {
+  display: grid;
+  gap: 8px;
+}
+
+.module-row {
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e5e0d8;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(23, 32, 29, 0.06);
+}
+
+.module-row > span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #0f4c45;
+  background: #eef6f3;
+}
+
+.module-row strong,
+.module-row small,
+.module-row em {
+  display: block;
+}
+
+.module-row em {
+  margin-top: 6px;
+  color: #7a4c16;
+  font-size: 0.76rem;
+  font-style: normal;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .count-list {
   display: grid;
   gap: 10px;
@@ -773,7 +827,8 @@ h2 {
   }
 
   .metric-grid,
-  .quick-action-grid {
+  .quick-action-grid,
+  .module-plan-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -786,7 +841,8 @@ h2 {
   }
 
   .form-grid,
-  .form-grid.three {
+  .form-grid.three,
+  .module-plan-grid {
     grid-template-columns: 1fr;
   }
 

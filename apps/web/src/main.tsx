@@ -1,9 +1,6 @@
 import React, { FormEvent, useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import {
-  AlertTriangle,
-  ArrowRight,
-  ClipboardCheck,
   Calculator,
   CalendarDays,
   Check,
@@ -21,122 +18,46 @@ import {
   ShoppingCart,
   Users
 } from 'lucide-react';
+import { Checklists } from './modules/checklists/Checklists';
+import { coreModules, navigationModules, paidAddonModules } from './modules/catalog';
+import { Dashboard } from './modules/dashboard/Dashboard';
+import { EmptyState } from './modules/shared/EmptyState';
+import { Shopping } from './modules/shopping/Shopping';
+import {
+  EasyCountInput,
+  EasyCountRun,
+  Employee,
+  Location,
+  InventoryProduct,
+  Product,
+  ProductFormData,
+  SessionUser,
+  Shift,
+  StockItem,
+  Tab,
+  Vacation
+} from './types';
+import {
+  addMonths,
+  buildMonthGrid,
+  dateInRange,
+  firstName,
+  formatAmount,
+  formatDateInput,
+  formatNullableAmount,
+  formatPackage,
+  formatPointDefinition,
+  formatShortDate,
+  formatTime,
+  formatUnitLabel,
+  productToForm,
+  startOfMonth
+} from './utils';
 import './styles.css';
-
-type Tab = 'dashboard' | 'stock' | 'shopping' | 'easy-count' | 'shifts' | 'checklists' | 'admin';
-
-type Product = {
-  id: string;
-  name: string;
-  category?: { name: string } | null;
-  unit: string;
-  containerType?: string;
-  containerSize?: string | number | null;
-  containerUnit?: string | null;
-  reorderPoint?: string | number | null;
-  parLevel?: string | number | null;
-  isEasyCount?: boolean;
-  easyCountUnitQty?: string | number | null;
-};
-
-type ProductFormData = {
-  name: string;
-  unit: string;
-  containerType: string;
-  containerSize: number;
-  containerUnit: string;
-  parLevel: number;
-  reorderPoint: number;
-  isEasyCount: boolean;
-  easyCountUnitQty: number;
-};
-
-type StockItem = {
-  id: string;
-  quantity: string | number;
-  product: Product;
-};
-
-type Location = {
-  id: string;
-  name: string;
-  organizationId: string;
-};
-
-type Membership = {
-  role: string;
-  organization: { id: string; name: string };
-  location?: { id: string; name: string } | null;
-};
-
-type SessionUser = {
-  id: string;
-  email: string;
-  name: string;
-  memberships?: Membership[];
-};
-
-type Employee = {
-  id: string;
-  name: string;
-  email?: string | null;
-  phone?: string | null;
-  weeklyHours: number;
-  canConfigureProducts: boolean;
-  canManageEmployees: boolean;
-  canManageLists: boolean;
-  canManageSchedule: boolean;
-  canUseEasyCount: boolean;
-  isActive: boolean;
-};
-
-type Shift = {
-  id: string;
-  title: string;
-  startsAt: string;
-  endsAt: string;
-  employee?: Employee | null;
-};
-
-type Vacation = {
-  id: string;
-  startsOn: string;
-  endsOn: string;
-  note?: string | null;
-  employee: Employee;
-};
-
-type EasyCountInput = {
-  targetCount: string;
-  registerCount: string;
-};
-
-type EasyCountRun = {
-  id: string;
-  countedAt: string;
-  lines: Array<{
-    id: string;
-    startingCount: number;
-    targetCount: number;
-    registerCount: number;
-    differenceCount: number;
-    quantityPerPoint: string | number;
-    correctionQty: string | number;
-    product: Product;
-  }>;
-};
 
 const apiBase = window.location.hostname === 'int-web.pub-o.com'
   ? 'https://int-api.pub-o.com/api'
   : '/api';
-
-const checklistItems = [
-  'Kassa zählen',
-  'Zapfhähne spülen',
-  'Kühlhaus prüfen',
-  'Reservierungen kontrollieren',
-  'Closing-Notiz schreiben'
-];
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -659,30 +580,27 @@ function App() {
       </section>
 
       <nav className="bottom-nav" aria-label="Hauptnavigation">
-        <NavButton tab="dashboard" activeTab={activeTab} label="Home" onClick={setActiveTab}>
-          <Home size={21} />
-        </NavButton>
-        <NavButton tab="stock" activeTab={activeTab} label="Stock" onClick={setActiveTab}>
-          <Package size={21} />
-        </NavButton>
-        <NavButton tab="shopping" activeTab={activeTab} label="Einkauf" onClick={setActiveTab}>
-          <ShoppingCart size={21} />
-        </NavButton>
-        <NavButton tab="easy-count" activeTab={activeTab} label="Easy" onClick={setActiveTab}>
-          <Calculator size={21} />
-        </NavButton>
-        <NavButton tab="checklists" activeTab={activeTab} label="Listen" onClick={setActiveTab}>
-          <ListChecks size={21} />
-        </NavButton>
-        <NavButton tab="shifts" activeTab={activeTab} label="Dienst" onClick={setActiveTab}>
-          <CalendarDays size={21} />
-        </NavButton>
-        <NavButton tab="admin" activeTab={activeTab} label="Admin" onClick={setActiveTab}>
-          <ShieldCheck size={21} />
-        </NavButton>
+        {navigationModules.map((module) => (
+          <NavButton tab={module.id} activeTab={activeTab} label={module.shortLabel} onClick={setActiveTab} key={module.id}>
+            {moduleIcon(module.id, 21)}
+          </NavButton>
+        ))}
       </nav>
     </main>
   );
+}
+
+function moduleIcon(tab: Tab, size: number) {
+  const icons: Record<Tab, React.ReactNode> = {
+    dashboard: <Home size={size} />,
+    stock: <Package size={size} />,
+    shopping: <ShoppingCart size={size} />,
+    'easy-count': <Calculator size={size} />,
+    checklists: <ListChecks size={size} />,
+    shifts: <CalendarDays size={size} />,
+    admin: <ShieldCheck size={size} />
+  };
+  return icons[tab];
 }
 
 function NavButton({
@@ -706,133 +624,6 @@ function NavButton({
   );
 }
 
-function Dashboard({
-  lowStock,
-  productCount,
-  employeeCount,
-  shiftCount,
-  locationName,
-  onOpen
-}: {
-  lowStock: Array<Product & { current: number; target: number }>;
-  productCount: number;
-  employeeCount: number;
-  shiftCount: number;
-  locationName?: string;
-  onOpen: (tab: Tab) => void;
-}) {
-  const priorityStock = lowStock.slice(0, 3);
-
-  return (
-    <section className="dashboard-view">
-      <div className="hero-panel dashboard-hero">
-        <div className="hero-copy">
-          <span className="eyebrow">{locationName ?? 'Pub-O'} · Heute</span>
-          <h1>Alles im Blick</h1>
-          <p>{lowStock.length > 0 ? `${lowStock.length} Bestände brauchen Aufmerksamkeit.` : 'Bestände, Team und Closing sehen ruhig aus.'}</p>
-          <div className="hero-actions">
-            <button className="primary-button light-button" type="button" onClick={() => onOpen('stock')}>
-              <Package size={18} />
-              Bestand prüfen
-            </button>
-            <button className="text-button ghost-button" type="button" onClick={() => onOpen('shifts')}>
-              <CalendarDays size={18} />
-              Dienstplan
-            </button>
-          </div>
-        </div>
-        <div className="hero-badge" aria-hidden="true">
-          <ClipboardCheck size={34} />
-        </div>
-      </div>
-
-      <div className="metric-grid">
-        <Metric label="Produkte" value={String(productCount)} detail="im Bestand" />
-        <Metric label="Stock Alerts" value={String(lowStock.length)} detail="unter Ziel" tone={lowStock.length > 0 ? 'alert' : 'ok'} />
-        <Metric label="Team" value={String(employeeCount)} detail="aktive Profile" />
-        <Metric label="Dienste" value={String(shiftCount)} detail="im Monat" />
-      </div>
-
-      <section className="dashboard-section">
-        <div className="section-heading">
-          <div>
-            <span className="eyebrow">Priorität</span>
-            <h2>Bestandswarnungen</h2>
-          </div>
-          <button className="inline-link" type="button" onClick={() => onOpen('shopping')}>
-            Einkauf
-            <ArrowRight size={16} />
-          </button>
-        </div>
-        <div className="dashboard-alert-list">
-          {priorityStock.length === 0 && (
-            <div className="empty-state calm-state">
-              <Check size={18} />
-              Keine kritischen Bestände.
-            </div>
-          )}
-          {priorityStock.map((product) => (
-            <button className="dashboard-alert" type="button" key={product.id} onClick={() => onOpen('stock')}>
-              <span className="alert-icon"><AlertTriangle size={18} /></span>
-              <span>
-                <strong>{product.name}</strong>
-                <small>{formatAmount(product.current)} von {formatAmount(product.target)} {formatUnitLabel(product.unit)}</small>
-              </span>
-              <ArrowRight size={17} />
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="quick-action-grid" aria-label="Schnellzugriff">
-        <QuickAction label="Easy Count" detail="Nachbonnage" icon={<Calculator size={20} />} onClick={() => onOpen('easy-count')} />
-        <QuickAction label="Closing" detail="Liste öffnen" icon={<ListChecks size={20} />} onClick={() => onOpen('checklists')} />
-        <QuickAction label="Admin" detail="Standort und Login" icon={<ShieldCheck size={20} />} onClick={() => onOpen('admin')} />
-      </section>
-    </section>
-  );
-}
-
-function Metric({
-  label,
-  value,
-  detail,
-  tone
-}: {
-  label: string;
-  value: string;
-  detail?: string;
-  tone?: 'alert' | 'ok';
-}) {
-  return (
-    <div className={`metric${tone ? ` ${tone}` : ''}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-      {detail && <small>{detail}</small>}
-    </div>
-  );
-}
-
-function QuickAction({
-  label,
-  detail,
-  icon,
-  onClick
-}: {
-  label: string;
-  detail: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <button className="quick-action" type="button" onClick={onClick}>
-      <span>{icon}</span>
-      <strong>{label}</strong>
-      <small>{detail}</small>
-    </button>
-  );
-}
-
 function Stock({
   products,
   counts,
@@ -841,7 +632,7 @@ function Stock({
   onUpdateProduct,
   onSaveStockCount
 }: {
-  products: Array<Product & { current: number; target: number }>;
+  products: InventoryProduct[];
   counts: Record<string, string>;
   onCountChange: (productId: string, value: string) => void;
   onCreateProduct: (data: ProductFormData) => void;
@@ -907,28 +698,6 @@ function Stock({
   );
 }
 
-function Shopping({ lowStock }: { lowStock: Array<Product & { current: number; target: number }> }) {
-  return (
-    <section className="section">
-      <h2>Einkauf</h2>
-      <div className="action-list">
-        {lowStock.length === 0 && <EmptyState text="Keine niedrigen Bestände." />}
-        {lowStock.map((product) => (
-          <article className="list-row" key={product.id}>
-            <div>
-              <strong>{product.name}</strong>
-              <span>
-                {Math.max(0, product.target - product.current)} {formatUnitLabel(product.unit)} bis Zielbestand
-              </span>
-            </div>
-            <input type="checkbox" aria-label={`${product.name} erledigt`} />
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function EasyCount({
   products,
   values,
@@ -936,7 +705,7 @@ function EasyCount({
   onChange,
   onSave
 }: {
-  products: Array<Product & { current: number; target: number }>;
+  products: InventoryProduct[];
   values: Record<string, EasyCountInput>;
   runs: EasyCountRun[];
   onChange: (productId: string, field: keyof EasyCountInput, value: string) => void;
@@ -1109,7 +878,46 @@ function AdminPanel({
           ))}
         </select>
       </label>
+      <ModulePlanOverview />
     </section>
+  );
+}
+
+function ModulePlanOverview() {
+  return (
+    <section className="section">
+      <h2>Module & Abo</h2>
+      <div className="module-plan-grid">
+        <ModulePlanColumn title="Basisfunktionen" modules={coreModules} />
+        <ModulePlanColumn title="Paid Add-ons" modules={paidAddonModules} />
+      </div>
+    </section>
+  );
+}
+
+function ModulePlanColumn({
+  title,
+  modules
+}: {
+  title: string;
+  modules: typeof coreModules;
+}) {
+  return (
+    <div className="module-plan-column">
+      <strong>{title}</strong>
+      <div className="module-list">
+        {modules.map((module) => (
+          <article className="module-row" key={module.id}>
+            <span>{moduleIcon(module.id, 18)}</span>
+            <div>
+              <strong>{module.label}</strong>
+              <small>{module.summary}</small>
+            </div>
+            <em>{module.tier === 'core' ? 'inkludiert' : 'Add-on'}</em>
+          </article>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -1627,130 +1435,6 @@ function Schedule({
       )}
     </section>
   );
-}
-
-function Checklists() {
-  return (
-    <section className="section">
-      <h2>Closing</h2>
-      <div className="action-list">
-        {checklistItems.map((item) => (
-          <label className="check-row" key={item}>
-            <input type="checkbox" />
-            <span>{item}</span>
-          </label>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function EmptyState({ text }: { text: string }) {
-  return <div className="empty-state">{text}</div>;
-}
-
-function formatPackage(product: Product) {
-  const size = Number(product.containerSize ?? 0);
-  const formattedSize = size > 0 ? ` ${Number.isInteger(size) ? size : size.toFixed(3).replace(/0+$/, '').replace(/\.$/, '')}` : '';
-  const unit = product.containerUnit ? ` ${formatUnitLabel(product.containerUnit)}` : '';
-  return `${product.containerType ?? 'Stück'}${formattedSize}${unit}`;
-}
-
-function formatAmount(value: number) {
-  return Number.isInteger(value) ? String(value) : value.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
-}
-
-function formatNullableAmount(value: Product[keyof Product]) {
-  const amount = Number(value ?? 0);
-  return formatAmount(amount);
-}
-
-function productToForm(product?: Product) {
-  return {
-    name: product?.name ?? '',
-    unit: formatUnitLabel(product?.unit ?? 'Stück'),
-    containerType: product?.containerType ?? 'Stück',
-    containerSize: String(product?.containerSize ?? '1'),
-    containerUnit: formatUnitLabel(product?.containerUnit ?? 'Stück'),
-    parLevel: String(product?.parLevel ?? '0'),
-    reorderPoint: String(product?.reorderPoint ?? '0'),
-    isEasyCount: product?.isEasyCount ?? false,
-    easyCountUnitQty: String(product?.easyCountUnitQty ?? '1')
-  };
-}
-
-function formatUnitLabel(unit?: string | number | null) {
-  const value = String(unit ?? '').trim();
-  const labels: Record<string, string> = {
-    Stk: 'Stück',
-    stk: 'Stück',
-    pcs: 'Stück',
-    l: 'Liter',
-    L: 'Liter',
-    ml: 'Milliliter',
-    kg: 'Kilogramm',
-    g: 'Gramm'
-  };
-  return labels[value] ?? value;
-}
-
-function formatPointDefinition(product: Product) {
-  const unitQty = Number(product.easyCountUnitQty ?? 1) || 1;
-  const unit = formatUnitLabel(product.unit);
-  if (unit === 'Milliliter' && unitQty === 100) {
-    return '1 Punkt = 100 ml';
-  }
-  if (unit === 'Liter' && Math.abs(unitQty - 0.125) < 0.001) {
-    return '1 Punkt = 1/8 Liter';
-  }
-  if (unit === 'Milliliter' && unitQty === 20) {
-    return '1 Punkt = 2 cl';
-  }
-  return `1 Punkt = ${formatAmount(unitQty)} ${unit}`;
-}
-
-function startOfMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function addMonths(date: Date, months: number) {
-  return new Date(date.getFullYear(), date.getMonth() + months, 1);
-}
-
-function buildMonthGrid(month: Date) {
-  const first = startOfMonth(month);
-  const offset = (first.getDay() + 6) % 7;
-  const start = new Date(first);
-  start.setDate(first.getDate() - offset);
-
-  return Array.from({ length: 42 }, (_, index) => {
-    const day = new Date(start);
-    day.setDate(start.getDate() + index);
-    return day;
-  });
-}
-
-function formatDateInput(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function formatTime(value: string) {
-  return new Date(value).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
-}
-
-function formatShortDate(value: string) {
-  return new Date(value).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit' });
-}
-
-function firstName(name: string) {
-  return name.trim().split(/\s+/)[0] || name;
-}
-
-function dateInRange(day: string, startsOn: string, endsOn: string) {
-  return day >= startsOn.slice(0, 10) && day <= endsOn.slice(0, 10);
 }
 
 if ('serviceWorker' in navigator) {
