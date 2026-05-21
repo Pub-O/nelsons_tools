@@ -768,8 +768,8 @@ function Stock({
           );
         })}
       </div>
-      <ProductForm onCreateProduct={onCreateProduct} />
       <ProductEditor products={products} onUpdateProduct={onUpdateProduct} />
+      <ProductForm onCreateProduct={onCreateProduct} />
       <section className="section">
         <h2>Zählstand</h2>
         <div className="count-list">
