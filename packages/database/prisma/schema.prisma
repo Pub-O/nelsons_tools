@@ -76,6 +76,7 @@ model Organization {
   products    Product[]
   categories   ProductCategory[]
   employees    Employee[]
+  vacationDays EmployeeVacation[]
   checklists   ChecklistTemplate[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -294,17 +295,36 @@ model Employee {
   name            String
   email           String?
   phone           String?
+  weeklyHours     Int       @default(0)
   canConfigureProducts Boolean @default(false)
   canManageEmployees   Boolean @default(false)
   canManageLists       Boolean @default(false)
+  canManageSchedule    Boolean @default(false)
   canUseEasyCount      Boolean @default(false)
   isActive        Boolean   @default(true)
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   shifts          Shift[]
+  vacationDays    EmployeeVacation[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   @@unique([organizationId, name])
+}
+
+model EmployeeVacation {
+  id              String        @id @default(uuid()) @db.Uuid
+  organizationId  String        @db.Uuid
+  employeeId      String        @db.Uuid
+  startsOn        DateTime      @db.Date
+  endsOn          DateTime      @db.Date
+  note            String?
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employee        Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([organizationId, startsOn, endsOn])
+  @@index([employeeId, startsOn])
 }
 
 model Shift {

@@ -8,9 +8,11 @@ const employeeBody = Type.Object({
   name: Type.String({ minLength: 1 }),
   email: Type.Optional(Type.String({ format: 'email' })),
   phone: Type.Optional(Type.String()),
+  weeklyHours: Type.Optional(Type.Integer({ minimum: 0 })),
   canConfigureProducts: Type.Optional(Type.Boolean()),
   canManageEmployees: Type.Optional(Type.Boolean()),
   canManageLists: Type.Optional(Type.Boolean()),
+  canManageSchedule: Type.Optional(Type.Boolean()),
   canUseEasyCount: Type.Optional(Type.Boolean()),
   isActive: Type.Optional(Type.Boolean())
 });
@@ -82,9 +84,11 @@ type EmployeeBody = {
   name: string;
   email?: string;
   phone?: string;
+  weeklyHours?: number;
   canConfigureProducts?: boolean;
   canManageEmployees?: boolean;
   canManageLists?: boolean;
+  canManageSchedule?: boolean;
   canUseEasyCount?: boolean;
   isActive?: boolean;
 };
@@ -95,9 +99,11 @@ function toEmployeeData(body: EmployeeBody) {
     name: body.name,
     email: body.email || null,
     phone: body.phone || null,
+    weeklyHours: body.weeklyHours ?? 0,
     canConfigureProducts: body.canConfigureProducts ?? false,
     canManageEmployees: body.canManageEmployees ?? false,
     canManageLists: body.canManageLists ?? false,
+    canManageSchedule: body.canManageSchedule ?? false,
     canUseEasyCount: body.canUseEasyCount ?? false,
     isActive: body.isActive ?? true
   };

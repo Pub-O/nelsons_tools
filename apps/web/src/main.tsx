@@ -3,12 +3,16 @@ import ReactDOM from 'react-dom/client';
 import {
   ClipboardCheck,
   Calculator,
+  CalendarDays,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Pencil,
   Home,
   ListChecks,
   LogOut,
   Package,
+  Plane,
   Plus,
   Save,
   ShieldCheck,
@@ -75,11 +79,29 @@ type Employee = {
   name: string;
   email?: string | null;
   phone?: string | null;
+  weeklyHours: number;
   canConfigureProducts: boolean;
   canManageEmployees: boolean;
   canManageLists: boolean;
+  canManageSchedule: boolean;
   canUseEasyCount: boolean;
   isActive: boolean;
+};
+
+type Shift = {
+  id: string;
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  employee?: Employee | null;
+};
+
+type Vacation = {
+  id: string;
+  startsOn: string;
+  endsOn: string;
+  note?: string | null;
+  employee: Employee;
 };
 
 type EasyCountInput = {
@@ -107,12 +129,6 @@ const apiBase = window.location.hostname === 'int-web.pub-o.com'
   ? 'https://int-api.pub-o.com/api'
   : '/api';
 
-const shifts = [
-  { name: 'Mia', role: 'Bar', time: '16:00 - 23:00' },
-  { name: 'Leon', role: 'Service', time: '18:00 - 01:00' },
-  { name: 'Sara', role: 'Close', time: '20:00 - 02:00' }
-];
-
 const checklistItems = [
   'Kassa zählen',
   'Zapfhähne spülen',
@@ -133,6 +149,9 @@ function App() {
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [easyCounts, setEasyCounts] = useState<Record<string, EasyCountInput>>({});
   const [easyCountRuns, setEasyCountRuns] = useState<EasyCountRun[]>([]);
+  const [scheduleMonth, setScheduleMonth] = useState(() => startOfMonth(new Date()));
+  const [scheduleShifts, setScheduleShifts] = useState<Shift[]>([]);
+  const [vacations, setVacations] = useState<Vacation[]>([]);
   const [status, setStatus] = useState('');
 
   const activeLocation = locations.find((location) => location.id === activeLocationId);
@@ -175,8 +194,9 @@ function App() {
     if (token && activeLocationId) {
       void loadStock(token, activeLocationId);
       void loadEasyCountRuns(token, activeLocationId);
+      void loadScheduleData(token, activeLocationId, scheduleMonth);
     }
-  }, [token, activeLocationId]);
+  }, [token, activeLocationId, organizationId, scheduleMonth]);
 
   async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const response = await fetch(`${apiBase}${path}`, {
@@ -268,6 +288,29 @@ function App() {
     }
   }
 
+  async function loadScheduleData(accessToken: string, locationId: string, month: Date) {
+    if (!organizationId) {
+      return;
+    }
+
+    try {
+      const from = formatDateInput(startOfMonth(month));
+      const to = formatDateInput(addMonths(startOfMonth(month), 1));
+      const [shiftResult, vacationResult] = await Promise.all([
+        request<{ shifts: Shift[] }>(`/shifts?locationId=${locationId}&from=${from}&to=${to}`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        }),
+        request<{ vacations: Vacation[] }>(`/vacations?organizationId=${organizationId}&from=${from}&to=${to}`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        })
+      ]);
+      setScheduleShifts(shiftResult.shifts);
+      setVacations(vacationResult.vacations);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Dienstplan konnte nicht geladen werden.');
+    }
+  }
+
   function handleAuthenticated(accessToken: string) {
     localStorage.setItem('puboAccessToken', accessToken);
     setToken(accessToken);
@@ -286,6 +329,8 @@ function App() {
     setEmployees([]);
     setEasyCounts({});
     setEasyCountRuns([]);
+    setScheduleShifts([]);
+    setVacations([]);
     setActiveTab('dashboard');
   }
 
@@ -388,6 +433,65 @@ function App() {
       setStatus(`${result.employee.name} wurde angelegt.`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Mitarbeiter konnte nicht angelegt werden.');
+    }
+  }
+
+  async function createShift(data: {
+    employeeId: string;
+    date: string;
+    startsAt: string;
+    endsAt: string;
+    title: string;
+  }) {
+    if (!activeLocationId) {
+      setStatus('Bitte zuerst eine Location auswählen.');
+      return;
+    }
+
+    try {
+      const result = await request<{ shift: Shift }>('/shifts', {
+        method: 'POST',
+        body: JSON.stringify({
+          locationId: activeLocationId,
+          employeeId: data.employeeId,
+          title: data.title,
+          startsAt: `${data.date}T${data.startsAt}:00`,
+          endsAt: `${data.date}T${data.endsAt}:00`
+        })
+      });
+      setScheduleShifts((items) => [...items, result.shift].sort((a, b) => a.startsAt.localeCompare(b.startsAt)));
+      setStatus('Dienst wurde eingetragen.');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Dienst konnte nicht eingetragen werden.');
+    }
+  }
+
+  async function createVacation(data: {
+    employeeId: string;
+    startsOn: string;
+    endsOn: string;
+    note: string;
+  }) {
+    if (!organizationId) {
+      setStatus('Keine Organisation gefunden. Bitte neu anmelden.');
+      return;
+    }
+
+    try {
+      const result = await request<{ vacation: Vacation }>('/vacations', {
+        method: 'POST',
+        body: JSON.stringify({
+          organizationId,
+          employeeId: data.employeeId,
+          startsOn: data.startsOn,
+          endsOn: data.endsOn,
+          note: data.note || undefined
+        })
+      });
+      setVacations((items) => [...items, result.vacation].sort((a, b) => a.startsOn.localeCompare(b.startsOn)));
+      setStatus('Urlaub wurde eingetragen.');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Urlaub konnte nicht eingetragen werden.');
     }
   }
 
@@ -504,7 +608,17 @@ function App() {
             onSave={saveEasyCount}
           />
         )}
-        {activeTab === 'shifts' && <Shifts />}
+        {activeTab === 'shifts' && (
+          <Schedule
+            month={scheduleMonth}
+            shifts={scheduleShifts}
+            vacations={vacations}
+            employees={employees}
+            onMonthChange={setScheduleMonth}
+            onCreateShift={createShift}
+            onCreateVacation={createVacation}
+          />
+        )}
         {activeTab === 'checklists' && <Checklists />}
         {activeTab === 'admin' && (
           token ? (
@@ -543,6 +657,9 @@ function App() {
         </NavButton>
         <NavButton tab="checklists" activeTab={activeTab} label="Listen" onClick={setActiveTab}>
           <ListChecks size={21} />
+        </NavButton>
+        <NavButton tab="shifts" activeTab={activeTab} label="Dienst" onClick={setActiveTab}>
+          <CalendarDays size={21} />
         </NavButton>
         <NavButton tab="admin" activeTab={activeTab} label="Admin" onClick={setActiveTab}>
           <ShieldCheck size={21} />
@@ -1120,23 +1237,30 @@ function EmployeeForm({
     name: '',
     email: '',
     phone: '',
+    weeklyHours: '0',
     canConfigureProducts: false,
     canManageEmployees: false,
     canManageLists: false,
+    canManageSchedule: false,
     canUseEasyCount: false,
     isActive: true
   });
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    onCreateEmployee(form);
+    onCreateEmployee({
+      ...form,
+      weeklyHours: Number(form.weeklyHours || 0)
+    });
     setForm({
       name: '',
       email: '',
       phone: '',
+      weeklyHours: '0',
       canConfigureProducts: false,
       canManageEmployees: false,
       canManageLists: false,
+      canManageSchedule: false,
       canUseEasyCount: false,
       isActive: true
     });
@@ -1160,10 +1284,15 @@ function EmployeeForm({
             <input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} />
           </label>
         </div>
+        <label>
+          Stunden pro Woche
+          <input type="number" min="0" step="1" value={form.weeklyHours} onChange={(event) => setForm({ ...form, weeklyHours: event.target.value })} />
+        </label>
         <div className="permission-grid">
           <PermissionToggle label="Produkte konfigurieren" checked={form.canConfigureProducts} onChange={(checked) => setForm({ ...form, canConfigureProducts: checked })} />
           <PermissionToggle label="Mitarbeiter bearbeiten" checked={form.canManageEmployees} onChange={(checked) => setForm({ ...form, canManageEmployees: checked })} />
           <PermissionToggle label="Listen erstellen, bearbeiten" checked={form.canManageLists} onChange={(checked) => setForm({ ...form, canManageLists: checked })} />
+          <PermissionToggle label="Dienstplanung" checked={form.canManageSchedule} onChange={(checked) => setForm({ ...form, canManageSchedule: checked })} />
           <PermissionToggle label="Einfache Nachbonnage" checked={form.canUseEasyCount} onChange={(checked) => setForm({ ...form, canUseEasyCount: checked })} />
         </div>
         <button className="primary-button" type="submit">
@@ -1177,9 +1306,9 @@ function EmployeeForm({
           <article className="employee-row" key={employee.id}>
             <div>
               <strong>{employee.name}</strong>
-              <span>{employee.email || employee.phone || 'Kein Kontakt hinterlegt'}</span>
+              <span>{employee.email || employee.phone || 'Kein Kontakt hinterlegt'} · {employee.weeklyHours || 0} h/Woche</span>
             </div>
-            <small>{employee.canUseEasyCount ? 'EasyCount erlaubt' : 'EasyCount gesperrt'}</small>
+            <small>{employee.canManageSchedule ? 'Dienstplanung' : employee.canUseEasyCount ? 'EasyCount erlaubt' : 'Basis'}</small>
           </article>
         ))}
       </div>
@@ -1196,21 +1325,185 @@ function PermissionToggle({ label, checked, onChange }: { label: string; checked
   );
 }
 
-function Shifts() {
+function Schedule({
+  month,
+  shifts,
+  vacations,
+  employees,
+  onMonthChange,
+  onCreateShift,
+  onCreateVacation
+}: {
+  month: Date;
+  shifts: Shift[];
+  vacations: Vacation[];
+  employees: Employee[];
+  onMonthChange: (month: Date) => void;
+  onCreateShift: (data: { employeeId: string; date: string; startsAt: string; endsAt: string; title: string }) => void;
+  onCreateVacation: (data: { employeeId: string; startsOn: string; endsOn: string; note: string }) => void;
+}) {
+  const [shiftForm, setShiftForm] = useState({
+    employeeId: employees[0]?.id ?? '',
+    date: formatDateInput(new Date()),
+    startsAt: '18:00',
+    endsAt: '23:00',
+    title: 'Dienst'
+  });
+  const [vacationForm, setVacationForm] = useState({
+    employeeId: employees[0]?.id ?? '',
+    startsOn: formatDateInput(new Date()),
+    endsOn: formatDateInput(new Date()),
+    note: ''
+  });
+  const calendarDays = useMemo(() => buildMonthGrid(month), [month]);
+  const schedulingEmployees = employees.filter((employee) => employee.canManageSchedule);
+
+  useEffect(() => {
+    if (employees[0] && !shiftForm.employeeId) {
+      setShiftForm((current) => ({ ...current, employeeId: employees[0].id }));
+    }
+    if (employees[0] && !vacationForm.employeeId) {
+      setVacationForm((current) => ({ ...current, employeeId: employees[0].id }));
+    }
+  }, [employees, shiftForm.employeeId, vacationForm.employeeId]);
+
+  function submitShift(event: FormEvent) {
+    event.preventDefault();
+    const employeeId = shiftForm.employeeId || employees[0]?.id;
+    if (!employeeId) {
+      return;
+    }
+
+    onCreateShift({ ...shiftForm, employeeId });
+  }
+
+  function submitVacation(event: FormEvent) {
+    event.preventDefault();
+    const employeeId = vacationForm.employeeId || employees[0]?.id;
+    if (!employeeId) {
+      return;
+    }
+
+    onCreateVacation({ ...vacationForm, employeeId });
+  }
+
   return (
     <section className="section">
-      <h2>Schichten</h2>
-      <div className="timeline">
-        {shifts.map((shift) => (
-          <article className="timeline-row" key={shift.name}>
-            <time>{shift.time}</time>
-            <div>
-              <strong>{shift.name}</strong>
-              <span>{shift.role}</span>
-            </div>
-          </article>
-        ))}
+      <div className="calendar-header">
+        <button className="icon-button secondary" type="button" aria-label="Voriger Monat" onClick={() => onMonthChange(addMonths(month, -1))}>
+          <ChevronLeft size={20} />
+        </button>
+        <h2>{month.toLocaleDateString('de-AT', { month: 'long', year: 'numeric' })}</h2>
+        <button className="icon-button secondary" type="button" aria-label="Nächster Monat" onClick={() => onMonthChange(addMonths(month, 1))}>
+          <ChevronRight size={20} />
+        </button>
       </div>
+
+      <div className="calendar-grid">
+        {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day) => (
+          <div className="calendar-weekday" key={day}>{day}</div>
+        ))}
+        {calendarDays.map((day) => {
+          const dayKey = formatDateInput(day);
+          const dayShifts = shifts
+            .filter((shift) => formatDateInput(new Date(shift.startsAt)) === dayKey)
+            .slice(0, 3);
+          const hiddenShiftCount = Math.max(0, shifts.filter((shift) => formatDateInput(new Date(shift.startsAt)) === dayKey).length - 3);
+          const dayVacations = vacations.filter((vacation) => dateInRange(dayKey, vacation.startsOn, vacation.endsOn));
+
+          return (
+            <article className={day.getMonth() === month.getMonth() ? 'calendar-day' : 'calendar-day muted'} key={dayKey}>
+              <div className="calendar-date">
+                <strong>{day.getDate()}</strong>
+                {dayVacations.length > 0 && <span title={dayVacations.map((vacation) => vacation.employee.name).join(', ')}><Plane size={13} /> {dayVacations.length}</span>}
+              </div>
+              <div className="shift-chip-list">
+                {dayShifts.map((shift) => (
+                  <div className="shift-chip" key={shift.id}>
+                    <strong>{firstName(shift.employee?.name ?? shift.title)}</strong>
+                    <span>{formatTime(shift.startsAt)}</span>
+                  </div>
+                ))}
+                {hiddenShiftCount > 0 && <small>+{hiddenShiftCount} weitere</small>}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      <form className="form-card" onSubmit={submitShift}>
+        <h2>Dienst eintragen</h2>
+        <label>
+          Mitarbeiter
+          <select value={shiftForm.employeeId} onChange={(event) => setShiftForm({ ...shiftForm, employeeId: event.target.value })}>
+            {employees.map((employee) => (
+              <option key={employee.id} value={employee.id}>{employee.name} ({employee.weeklyHours || 0} h/Woche)</option>
+            ))}
+          </select>
+        </label>
+        <div className="form-grid three">
+          <label>
+            Datum
+            <input type="date" value={shiftForm.date} onChange={(event) => setShiftForm({ ...shiftForm, date: event.target.value })} />
+          </label>
+          <label>
+            Start
+            <input type="time" value={shiftForm.startsAt} onChange={(event) => setShiftForm({ ...shiftForm, startsAt: event.target.value })} />
+          </label>
+          <label>
+            Ende
+            <input type="time" value={shiftForm.endsAt} onChange={(event) => setShiftForm({ ...shiftForm, endsAt: event.target.value })} />
+          </label>
+        </div>
+        <button className="primary-button" type="submit" disabled={employees.length === 0}>
+          <CalendarDays size={18} />
+          Dienst speichern
+        </button>
+      </form>
+
+      <form className="form-card" onSubmit={submitVacation}>
+        <h2>Urlaub eintragen</h2>
+        <label>
+          Mitarbeiter
+          <select value={vacationForm.employeeId} onChange={(event) => setVacationForm({ ...vacationForm, employeeId: event.target.value })}>
+            {employees.map((employee) => (
+              <option key={employee.id} value={employee.id}>{employee.name}</option>
+            ))}
+          </select>
+        </label>
+        <div className="form-grid">
+          <label>
+            Von
+            <input type="date" value={vacationForm.startsOn} onChange={(event) => setVacationForm({ ...vacationForm, startsOn: event.target.value })} />
+          </label>
+          <label>
+            Bis
+            <input type="date" value={vacationForm.endsOn} onChange={(event) => setVacationForm({ ...vacationForm, endsOn: event.target.value })} />
+          </label>
+        </div>
+        <button className="primary-button" type="submit" disabled={employees.length === 0}>
+          <Plane size={18} />
+          Urlaub speichern
+        </button>
+      </form>
+
+      {schedulingEmployees.length > 0 && (
+        <section className="section">
+          <h2>Urlaubskalender</h2>
+          <div className="count-list">
+            {vacations.length === 0 && <EmptyState text="Keine Urlaube in diesem Monat." />}
+            {vacations.map((vacation) => (
+              <article className="employee-row" key={vacation.id}>
+                <div>
+                  <strong>{vacation.employee.name}</strong>
+                  <span>{formatShortDate(vacation.startsOn)} bis {formatShortDate(vacation.endsOn)}</span>
+                </div>
+                <small>{vacation.note || 'Urlaub'}</small>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
     </section>
   );
 }
@@ -1263,6 +1556,50 @@ function productToForm(product?: Product) {
     isEasyCount: product?.isEasyCount ?? false,
     easyCountUnitQty: String(product?.easyCountUnitQty ?? '1')
   };
+}
+
+function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function addMonths(date: Date, months: number) {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1);
+}
+
+function buildMonthGrid(month: Date) {
+  const first = startOfMonth(month);
+  const offset = (first.getDay() + 6) % 7;
+  const start = new Date(first);
+  start.setDate(first.getDate() - offset);
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const day = new Date(start);
+    day.setDate(start.getDate() + index);
+    return day;
+  });
+}
+
+function formatDateInput(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatTime(value: string) {
+  return new Date(value).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatShortDate(value: string) {
+  return new Date(value).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit' });
+}
+
+function firstName(name: string) {
+  return name.trim().split(/\s+/)[0] || name;
+}
+
+function dateInRange(day: string, startsOn: string, endsOn: string) {
+  return day >= startsOn.slice(0, 10) && day <= endsOn.slice(0, 10);
 }
 
 if ('serviceWorker' in navigator) {
