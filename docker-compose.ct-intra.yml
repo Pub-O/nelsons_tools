@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pubo}
+      POSTGRES_USER: ${POSTGRES_USER:-pubo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.ct-intra}
+    volumes:
+      - pubo_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      API_PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-pubo}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-pubo}?schema=public
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET in .env.ct-intra}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET in .env.ct-intra}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://ct-intra}
+    expose:
+      - "4000"
+
+  schema-sync:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    profiles: ["tools"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-pubo}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-pubo}?schema=public
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET in .env.ct-intra}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET in .env.ct-intra}
+    command: ["npx", "prisma", "db", "push", "--schema", "packages/database/prisma/schema.prisma"]
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${PUBO_HTTP_PORT:-8080}:80"
+
+volumes:
+  pubo_postgres_data:

@@ -1,0 +1,28 @@
+{
+  "name": "@pub-o/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "db:generate": "dotenv -e ../../.env -- prisma generate --schema prisma/schema.prisma",
+    "db:migrate": "dotenv -e ../../.env -- prisma migrate dev --schema prisma/schema.prisma",
+    "db:studio": "dotenv -e ../../.env -- prisma studio --schema prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "dotenv-cli": "^7.4.2",
+    "prisma": "^5.17.0"
+  }
+}

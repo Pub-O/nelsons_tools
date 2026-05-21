@@ -1,0 +1,33 @@
+{
+  "name": "pub-o",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pub-O, short for Pub-Organizer, helps small and medium pubs manage stock, shifts, shopping lists, checklists, and handovers.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm-run-all db:generate build:database --parallel dev:api dev:web",
+    "dev:api": "npm --workspace @pub-o/api run dev",
+    "dev:web": "npm --workspace @pub-o/web run dev",
+    "build": "npm-run-all db:generate build:database build:api build:web",
+    "build:database": "npm --workspace @pub-o/database run build",
+    "build:api": "npm --workspace @pub-o/api run build",
+    "build:web": "npm --workspace @pub-o/web run build",
+    "lint": "npm-run-all lint:*",
+    "lint:api": "npm --workspace @pub-o/api run lint",
+    "lint:web": "npm --workspace @pub-o/web run lint",
+    "db:generate": "npm --workspace @pub-o/database run db:generate",
+    "db:migrate": "npm --workspace @pub-o/database run db:migrate",
+    "db:studio": "npm --workspace @pub-o/database run db:studio"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.5.4"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

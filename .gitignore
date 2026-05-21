@@ -35,3 +35,11 @@ Temporary Items
 *.icloud
 
 # End of https://www.toptal.com/developers/gitignore/api/macos
+
+node_modules/
+dist/
+.env
+.env.local
+.env.ct-intra
+coverage/
+.vite/

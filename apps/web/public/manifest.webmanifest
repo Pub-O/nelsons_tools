@@ -1,0 +1,16 @@
+{
+  "name": "Pub-O",
+  "short_name": "Pub-O",
+  "description": "Pub-Organizer for small and medium pubs and hospitality teams.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f3ee",
+  "theme_color": "#101820",
+  "icons": [
+    {
+      "src": "/img/pub-o-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

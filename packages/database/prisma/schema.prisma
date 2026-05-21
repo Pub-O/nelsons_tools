@@ -1,0 +1,385 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MembershipRole {
+  OWNER
+  MANAGER
+  STAFF
+}
+
+enum StockMovementType {
+  COUNT
+  PURCHASE
+  SALE
+  WASTE
+  TRANSFER
+  ADJUSTMENT
+}
+
+enum PurchaseListStatus {
+  DRAFT
+  ORDERED
+  RECEIVED
+  CANCELLED
+}
+
+enum ShiftStatus {
+  PLANNED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum ChecklistRunStatus {
+  OPEN
+  COMPLETED
+}
+
+model User {
+  id             String        @id @default(uuid()) @db.Uuid
+  email          String        @unique
+  name           String
+  passwordHash   String
+  memberships    Membership[]
+  refreshTokens  RefreshToken[]
+  stockCounts    StockCount[]
+  easyCountRuns  EasyCountRun[]
+  handoverNotes  HandoverNote[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+}
+
+model RefreshToken {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  tokenHash     String   @unique
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Organization {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String       @unique
+  locations   Location[]
+  memberships Membership[]
+  suppliers   Supplier[]
+  products    Product[]
+  categories   ProductCategory[]
+  employees    Employee[]
+  checklists   ChecklistTemplate[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+}
+
+model Location {
+  id              String             @id @default(uuid()) @db.Uuid
+  organizationId  String             @db.Uuid
+  name            String
+  timezone        String             @default("Europe/Vienna")
+  address         String?
+  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  memberships     Membership[]
+  stockItems      StockItem[]
+  stockCounts     StockCount[]
+  easyCountRuns   EasyCountRun[]
+  stockMovements  StockMovement[]
+  purchaseLists   PurchaseList[]
+  shifts          Shift[]
+  checklistRuns   ChecklistRun[]
+  handoverNotes   HandoverNote[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  deletedAt       DateTime?
+
+  @@unique([organizationId, name])
+}
+
+model Membership {
+  id              String           @id @default(uuid()) @db.Uuid
+  userId          String           @db.Uuid
+  organizationId  String           @db.Uuid
+  locationId      String?          @db.Uuid
+  role            MembershipRole   @default(STAFF)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location        Location?        @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([userId, organizationId, locationId])
+  @@index([organizationId, role])
+}
+
+model ProductCategory {
+  id              String       @id @default(uuid()) @db.Uuid
+  organizationId  String       @db.Uuid
+  name            String
+  sortOrder       Int          @default(0)
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  products        Product[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([organizationId, name])
+}
+
+model Product {
+  id                 String              @id @default(uuid()) @db.Uuid
+  organizationId     String              @db.Uuid
+  categoryId         String?             @db.Uuid
+  name               String
+  unit               String              @default("pcs")
+  containerType      String              @default("Stück")
+  containerSize      Decimal?            @db.Decimal(12, 3)
+  containerUnit      String?
+  sku                String?
+  parLevel           Decimal?            @db.Decimal(12, 3)
+  reorderPoint       Decimal?            @db.Decimal(12, 3)
+  isEasyCount        Boolean             @default(false)
+  easyCountUnitQty   Decimal?            @db.Decimal(12, 3)
+  isActive           Boolean             @default(true)
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category           ProductCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  stockItems         StockItem[]
+  stockCountLines    StockCountLine[]
+  stockMovements     StockMovement[]
+  purchaseListItems  PurchaseListItem[]
+  easyCountLines     EasyCountLine[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  deletedAt          DateTime?
+
+  @@unique([organizationId, name])
+  @@index([organizationId, isActive])
+}
+
+model EasyCountRun {
+  id          String           @id @default(uuid()) @db.Uuid
+  locationId  String           @db.Uuid
+  countedById String?          @db.Uuid
+  note        String?
+  countedAt   DateTime         @default(now())
+  location    Location         @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  countedBy   User?            @relation(fields: [countedById], references: [id], onDelete: SetNull)
+  lines       EasyCountLine[]
+  createdAt   DateTime         @default(now())
+
+  @@index([locationId, countedAt])
+}
+
+model EasyCountLine {
+  id                String        @id @default(uuid()) @db.Uuid
+  easyCountRunId    String        @db.Uuid
+  productId         String        @db.Uuid
+  startingCount     Int
+  targetCount       Int
+  registerCount     Int
+  differenceCount   Int
+  quantityPerPoint  Decimal       @db.Decimal(12, 3)
+  correctionQty     Decimal       @db.Decimal(12, 3)
+  easyCountRun      EasyCountRun  @relation(fields: [easyCountRunId], references: [id], onDelete: Cascade)
+  product           Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([easyCountRunId, productId])
+}
+
+model StockItem {
+  id          String    @id @default(uuid()) @db.Uuid
+  locationId  String    @db.Uuid
+  productId   String    @db.Uuid
+  quantity    Decimal   @default(0) @db.Decimal(12, 3)
+  location    Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([locationId, productId])
+}
+
+model StockCount {
+  id          String            @id @default(uuid()) @db.Uuid
+  locationId  String            @db.Uuid
+  countedById String?           @db.Uuid
+  note        String?
+  countedAt   DateTime          @default(now())
+  location    Location          @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  countedBy   User?             @relation(fields: [countedById], references: [id], onDelete: SetNull)
+  lines       StockCountLine[]
+  movements   StockMovement[]
+  createdAt   DateTime          @default(now())
+}
+
+model StockCountLine {
+  id            String      @id @default(uuid()) @db.Uuid
+  stockCountId  String      @db.Uuid
+  productId     String      @db.Uuid
+  expectedQty   Decimal?    @db.Decimal(12, 3)
+  countedQty    Decimal     @db.Decimal(12, 3)
+  stockCount    StockCount  @relation(fields: [stockCountId], references: [id], onDelete: Cascade)
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([stockCountId, productId])
+}
+
+model StockMovement {
+  id            String             @id @default(uuid()) @db.Uuid
+  locationId    String             @db.Uuid
+  productId     String             @db.Uuid
+  stockCountId  String?            @db.Uuid
+  type          StockMovementType
+  quantityDelta Decimal            @db.Decimal(12, 3)
+  note          String?
+  occurredAt    DateTime           @default(now())
+  location      Location           @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  product       Product            @relation(fields: [productId], references: [id], onDelete: Restrict)
+  stockCount    StockCount?        @relation(fields: [stockCountId], references: [id], onDelete: SetNull)
+  createdAt     DateTime           @default(now())
+
+  @@index([locationId, occurredAt])
+  @@index([productId, occurredAt])
+}
+
+model Supplier {
+  id              String          @id @default(uuid()) @db.Uuid
+  organizationId  String          @db.Uuid
+  name            String
+  email           String?
+  phone           String?
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  purchaseLists   PurchaseList[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@unique([organizationId, name])
+}
+
+model PurchaseList {
+  id          String              @id @default(uuid()) @db.Uuid
+  locationId  String              @db.Uuid
+  supplierId  String?             @db.Uuid
+  title       String
+  status      PurchaseListStatus  @default(DRAFT)
+  location    Location            @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  supplier    Supplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  items       PurchaseListItem[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model PurchaseListItem {
+  id              String        @id @default(uuid()) @db.Uuid
+  purchaseListId  String        @db.Uuid
+  productId       String?       @db.Uuid
+  label           String
+  quantity        Decimal       @db.Decimal(12, 3)
+  unit            String        @default("pcs")
+  isDone          Boolean       @default(false)
+  purchaseList    PurchaseList  @relation(fields: [purchaseListId], references: [id], onDelete: Cascade)
+  product         Product?      @relation(fields: [productId], references: [id], onDelete: SetNull)
+}
+
+model Employee {
+  id              String    @id @default(uuid()) @db.Uuid
+  organizationId  String    @db.Uuid
+  name            String
+  email           String?
+  phone           String?
+  canConfigureProducts Boolean @default(false)
+  canManageEmployees   Boolean @default(false)
+  canManageLists       Boolean @default(false)
+  canUseEasyCount      Boolean @default(false)
+  isActive        Boolean   @default(true)
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  shifts          Shift[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([organizationId, name])
+}
+
+model Shift {
+  id          String       @id @default(uuid()) @db.Uuid
+  locationId  String       @db.Uuid
+  employeeId  String?      @db.Uuid
+  title       String
+  startsAt    DateTime
+  endsAt      DateTime
+  status      ShiftStatus  @default(PLANNED)
+  note        String?
+  location    Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  employee    Employee?    @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([locationId, startsAt])
+}
+
+model ChecklistTemplate {
+  id              String           @id @default(uuid()) @db.Uuid
+  organizationId  String           @db.Uuid
+  title           String
+  description     String?
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  items           ChecklistItem[]
+  runs            ChecklistRun[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([organizationId, title])
+}
+
+model ChecklistItem {
+  id          String              @id @default(uuid()) @db.Uuid
+  templateId  String              @db.Uuid
+  label       String
+  sortOrder   Int                 @default(0)
+  template    ChecklistTemplate   @relation(fields: [templateId], references: [id], onDelete: Cascade)
+}
+
+model ChecklistRun {
+  id          String              @id @default(uuid()) @db.Uuid
+  templateId  String              @db.Uuid
+  locationId  String              @db.Uuid
+  status      ChecklistRunStatus  @default(OPEN)
+  completedAt DateTime?
+  template    ChecklistTemplate   @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  location    Location            @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  items       ChecklistRunItem[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model ChecklistRunItem {
+  id        String        @id @default(uuid()) @db.Uuid
+  runId     String        @db.Uuid
+  label     String
+  isDone    Boolean       @default(false)
+  note      String?
+  sortOrder Int           @default(0)
+  run       ChecklistRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+}
+
+model HandoverNote {
+  id          String    @id @default(uuid()) @db.Uuid
+  locationId  String    @db.Uuid
+  authorId    String?   @db.Uuid
+  title       String
+  body        String
+  isPinned    Boolean   @default(false)
+  location    Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  author      User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([locationId, createdAt])
+}
