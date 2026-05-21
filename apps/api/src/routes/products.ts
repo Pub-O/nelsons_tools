@@ -77,4 +77,62 @@ export async function productRoutes(app: FastifyInstance) {
 
     return reply.code(201).send({ product });
   });
+
+  app.patch('/products/:id', {
+    preHandler: requireAuth,
+    schema: {
+      body: productBody,
+      params: Type.Object({ id: Type.String({ format: 'uuid' }) })
+    }
+  }, async (request, reply) => {
+    const params = request.params as { id: string };
+    const body = request.body as {
+      organizationId: string;
+      categoryId?: string;
+      name: string;
+      unit: string;
+      containerType?: string;
+      containerSize?: number;
+      containerUnit?: string;
+      reorderPoint?: number;
+      parLevel?: number;
+      isEasyCount?: boolean;
+      easyCountUnitQty?: number;
+    };
+
+    const existing = await prisma.product.findFirst({
+      where: { id: params.id, deletedAt: null }
+    });
+    if (!existing) {
+      return reply.code(404).send({ message: 'Product not found' });
+    }
+
+    const membership = await requireOrganizationManager(request, reply, existing.organizationId);
+    if (!membership) {
+      return;
+    }
+
+    if (body.organizationId !== existing.organizationId) {
+      return reply.code(400).send({ message: 'Product organization cannot be changed' });
+    }
+
+    const product = await prisma.product.update({
+      where: { id: params.id },
+      data: {
+        categoryId: body.categoryId,
+        name: body.name,
+        unit: body.unit,
+        containerType: body.containerType ?? 'Stück',
+        containerSize: body.containerSize,
+        containerUnit: body.containerUnit,
+        reorderPoint: body.reorderPoint,
+        parLevel: body.parLevel,
+        isEasyCount: body.isEasyCount ?? false,
+        easyCountUnitQty: body.isEasyCount ? body.easyCountUnitQty : null
+      },
+      include: { category: true }
+    });
+
+    return { product };
+  });
 }

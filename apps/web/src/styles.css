@@ -254,7 +254,8 @@ h2 {
 .select-row,
 .count-row,
 .easy-count-row,
-.employee-row {
+.employee-row,
+.product-edit-row {
   background: #ffffff;
   border: 1px solid #e5e0d8;
   border-radius: 8px;
@@ -289,7 +290,9 @@ h2 {
 .form-card input,
 .form-card select,
 .select-row select,
-.count-row input {
+.count-row input,
+.inline-edit-form input,
+.inline-edit-form select {
   width: 100%;
   min-height: 44px;
   padding: 10px 12px;
@@ -370,6 +373,45 @@ h2 {
   justify-content: space-between;
   gap: 14px;
   padding: 14px;
+}
+
+.product-edit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+}
+
+.product-edit-row strong,
+.product-edit-row span,
+.product-edit-row small {
+  display: block;
+}
+
+.inline-edit-form {
+  width: 100%;
+  display: grid;
+  gap: 12px;
+}
+
+.inline-edit-form label {
+  display: grid;
+  gap: 6px;
+  color: #48514d;
+  font-weight: 700;
+}
+
+.button-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.compact-button {
+  min-height: 38px;
+  flex: 0 0 auto;
+  padding: 8px 10px;
 }
 
 .employee-row strong,
@@ -465,6 +507,11 @@ h2 {
   }
 
   .employee-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .product-edit-row {
     align-items: flex-start;
     flex-direction: column;
   }

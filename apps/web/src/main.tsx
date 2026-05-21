@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client';
 import {
   ClipboardCheck,
   Calculator,
+  Check,
+  Pencil,
   Home,
   ListChecks,
   LogOut,
@@ -29,6 +31,18 @@ type Product = {
   parLevel?: string | number | null;
   isEasyCount?: boolean;
   easyCountUnitQty?: string | number | null;
+};
+
+type ProductFormData = {
+  name: string;
+  unit: string;
+  containerType: string;
+  containerSize: number;
+  containerUnit: string;
+  parLevel: number;
+  reorderPoint: number;
+  isEasyCount: boolean;
+  easyCountUnitQty: number;
 };
 
 type StockItem = {
@@ -275,17 +289,7 @@ function App() {
     setActiveTab('dashboard');
   }
 
-  async function createProduct(data: {
-    name: string;
-    unit: string;
-    containerType: string;
-    containerSize: number;
-    containerUnit: string;
-    parLevel: number;
-    reorderPoint: number;
-    isEasyCount: boolean;
-    easyCountUnitQty: number;
-  }) {
+  async function createProduct(data: ProductFormData) {
     if (!organizationId) {
       setStatus('Keine Organisation gefunden. Bitte neu anmelden.');
       return;
@@ -318,6 +322,49 @@ function App() {
       setStatus(`${result.product.name} wurde angelegt.`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Produkt konnte nicht angelegt werden.');
+    }
+  }
+
+  async function updateProduct(productId: string, data: ProductFormData) {
+    if (!organizationId) {
+      setStatus('Keine Organisation gefunden. Bitte neu anmelden.');
+      return;
+    }
+
+    try {
+      const result = await request<{ product: Product }>(`/products/${productId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          organizationId,
+          name: data.name,
+          unit: data.unit,
+          containerType: data.containerType,
+          containerSize: data.containerSize,
+          containerUnit: data.containerUnit,
+          parLevel: data.parLevel,
+          reorderPoint: data.reorderPoint,
+          isEasyCount: data.isEasyCount,
+          easyCountUnitQty: data.isEasyCount ? data.easyCountUnitQty : undefined
+        })
+      });
+      setProducts((items) => items
+        .map((item) => (item.id === result.product.id ? result.product : item))
+        .sort((a, b) => a.name.localeCompare(b.name)));
+      if (result.product.isEasyCount) {
+        setEasyCounts((items) => ({
+          ...items,
+          [result.product.id]: items[result.product.id] ?? { startingCount: '0', targetCount: '0', registerCount: '0' }
+        }));
+      } else {
+        setEasyCounts((items) => {
+          const next = { ...items };
+          delete next[result.product.id];
+          return next;
+        });
+      }
+      setStatus(`${result.product.name} wurde aktualisiert.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Produkt konnte nicht aktualisiert werden.');
     }
   }
 
@@ -471,6 +518,7 @@ function App() {
               onLocationChange={setActiveLocationId}
               onCountChange={(productId, value) => setCounts((items) => ({ ...items, [productId]: value }))}
               onCreateProduct={createProduct}
+              onUpdateProduct={updateProduct}
               onCreateEmployee={createEmployee}
               onSaveStockCount={saveStockCount}
             />
@@ -767,6 +815,7 @@ function AdminPanel({
   onLocationChange,
   onCountChange,
   onCreateProduct,
+  onUpdateProduct,
   onCreateEmployee,
   onSaveStockCount
 }: {
@@ -778,17 +827,8 @@ function AdminPanel({
   counts: Record<string, string>;
   onLocationChange: (locationId: string) => void;
   onCountChange: (productId: string, value: string) => void;
-  onCreateProduct: (data: {
-    name: string;
-    unit: string;
-    containerType: string;
-    containerSize: number;
-    containerUnit: string;
-    parLevel: number;
-    reorderPoint: number;
-    isEasyCount: boolean;
-    easyCountUnitQty: number;
-  }) => void;
+  onCreateProduct: (data: ProductFormData) => void;
+  onUpdateProduct: (productId: string, data: ProductFormData) => void;
   onCreateEmployee: (data: Omit<Employee, 'id'>) => void;
   onSaveStockCount: () => void;
 }) {
@@ -808,6 +848,7 @@ function AdminPanel({
         </select>
       </label>
       <ProductForm onCreateProduct={onCreateProduct} />
+      <ProductEditor products={products} onUpdateProduct={onUpdateProduct} />
       <EmployeeForm employees={employees} onCreateEmployee={onCreateEmployee} />
       <section className="section">
         <h2>Zählstand</h2>
@@ -841,17 +882,7 @@ function AdminPanel({
 function ProductForm({
   onCreateProduct
 }: {
-  onCreateProduct: (data: {
-    name: string;
-    unit: string;
-    containerType: string;
-    containerSize: number;
-    containerUnit: string;
-    parLevel: number;
-    reorderPoint: number;
-    isEasyCount: boolean;
-    easyCountUnitQty: number;
-  }) => void;
+  onCreateProduct: (data: ProductFormData) => void;
 }) {
   const [form, setForm] = useState({
     name: '',
@@ -944,6 +975,137 @@ function ProductForm({
         Produkt speichern
       </button>
     </form>
+  );
+}
+
+function ProductEditor({
+  products,
+  onUpdateProduct
+}: {
+  products: Product[];
+  onUpdateProduct: (productId: string, data: ProductFormData) => void;
+}) {
+  const [editingProductId, setEditingProductId] = useState('');
+  const [form, setForm] = useState(() => productToForm(products[0]));
+
+  function startEditing(product: Product) {
+    setEditingProductId(product.id);
+    setForm(productToForm(product));
+  }
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!editingProductId) {
+      return;
+    }
+
+    onUpdateProduct(editingProductId, {
+      name: form.name,
+      unit: form.unit,
+      containerType: form.containerType,
+      containerSize: Number(form.containerSize || 0),
+      containerUnit: form.containerUnit,
+      parLevel: Number(form.parLevel || 0),
+      reorderPoint: Number(form.reorderPoint || 0),
+      isEasyCount: form.isEasyCount,
+      easyCountUnitQty: Number(form.easyCountUnitQty || 1)
+    });
+    setEditingProductId('');
+  }
+
+  return (
+    <section className="section">
+      <h2>Produkte bearbeiten</h2>
+      <div className="count-list">
+        {products.length === 0 && <EmptyState text="Noch keine Produkte angelegt." />}
+        {products.map((product) => (
+          <article className="product-edit-row" key={product.id}>
+            {editingProductId === product.id ? (
+              <form className="inline-edit-form" onSubmit={submit}>
+                <label>
+                  Produktname
+                  <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
+                </label>
+                <div className="form-grid">
+                  <label>
+                    Gebinde
+                    <select value={form.containerType} onChange={(event) => setForm({ ...form, containerType: event.target.value })}>
+                      <option>Fass</option>
+                      <option>Flasche</option>
+                      <option>Kiste</option>
+                      <option>Stück</option>
+                      <option>Karton</option>
+                      <option>Packung</option>
+                    </select>
+                  </label>
+                  <label>
+                    Größe
+                    <input type="number" min="0" step="0.001" value={form.containerSize} onChange={(event) => setForm({ ...form, containerSize: event.target.value })} />
+                  </label>
+                </div>
+                <div className="form-grid">
+                  <label>
+                    Größen-Einheit
+                    <select value={form.containerUnit} onChange={(event) => setForm({ ...form, containerUnit: event.target.value })}>
+                      <option>l</option>
+                      <option>ml</option>
+                      <option>Stk</option>
+                      <option>kg</option>
+                      <option>g</option>
+                    </select>
+                  </label>
+                  <label>
+                    Zähleinheit
+                    <input value={form.unit} onChange={(event) => setForm({ ...form, unit: event.target.value })} required />
+                  </label>
+                </div>
+                <div className="form-grid">
+                  <label>
+                    Zielbestand
+                    <input type="number" min="0" step="0.001" value={form.parLevel} onChange={(event) => setForm({ ...form, parLevel: event.target.value })} />
+                  </label>
+                  <label>
+                    Nachbestellen ab
+                    <input type="number" min="0" step="0.001" value={form.reorderPoint} onChange={(event) => setForm({ ...form, reorderPoint: event.target.value })} />
+                  </label>
+                </div>
+                <label className="check-row compact">
+                  <input type="checkbox" checked={form.isEasyCount} onChange={(event) => setForm({ ...form, isEasyCount: event.target.checked })} />
+                  <span>Easy Count</span>
+                </label>
+                {form.isEasyCount && (
+                  <label>
+                    Menge pro Punkt
+                    <input type="number" min="0" step="0.001" value={form.easyCountUnitQty} onChange={(event) => setForm({ ...form, easyCountUnitQty: event.target.value })} />
+                  </label>
+                )}
+                <div className="button-row">
+                  <button className="primary-button" type="submit">
+                    <Check size={18} />
+                    Speichern
+                  </button>
+                  <button className="text-button" type="button" onClick={() => setEditingProductId('')}>
+                    Abbrechen
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <div>
+                  <strong>{product.name}</strong>
+                  <span>{formatPackage(product)} · Ziel {formatNullableAmount(product.parLevel)} {product.unit}</span>
+                  {product.isEasyCount && <small>Easy Count: 1 Punkt = {formatNullableAmount(product.easyCountUnitQty)} {product.unit}</small>}
+                </div>
+                <button className="text-button compact-button" type="button" onClick={() => startEditing(product)} aria-label={`${product.name} bearbeiten`}>
+                  <Pencil size={17} />
+                  Bearbeiten
+                </button>
+              </>
+            )}
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -1082,6 +1244,25 @@ function formatPackage(product: Product) {
 
 function formatAmount(value: number) {
   return Number.isInteger(value) ? String(value) : value.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+}
+
+function formatNullableAmount(value: Product[keyof Product]) {
+  const amount = Number(value ?? 0);
+  return formatAmount(amount);
+}
+
+function productToForm(product?: Product) {
+  return {
+    name: product?.name ?? '',
+    unit: product?.unit ?? 'Stk',
+    containerType: product?.containerType ?? 'Stück',
+    containerSize: String(product?.containerSize ?? '1'),
+    containerUnit: product?.containerUnit ?? 'Stk',
+    parLevel: String(product?.parLevel ?? '0'),
+    reorderPoint: String(product?.reorderPoint ?? '0'),
+    isEasyCount: product?.isEasyCount ?? false,
+    easyCountUnitQty: String(product?.easyCountUnitQty ?? '1')
+  };
 }
 
 if ('serviceWorker' in navigator) {
