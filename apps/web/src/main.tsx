@@ -105,7 +105,6 @@ type Vacation = {
 };
 
 type EasyCountInput = {
-  startingCount: string;
   targetCount: string;
   registerCount: string;
 };
@@ -265,7 +264,6 @@ function App() {
           const quantityPerPoint = Number(item.product.easyCountUnitQty ?? 1) || 1;
           const currentPoints = Math.round(Number(item.quantity ?? 0) / quantityPerPoint);
           next[item.product.id] = {
-            startingCount: String(currentPoints),
             targetCount: String(currentPoints),
             registerCount: String(currentPoints)
           };
@@ -361,7 +359,7 @@ function App() {
       if (result.product.isEasyCount) {
         setEasyCounts((items) => ({
           ...items,
-          [result.product.id]: { startingCount: '0', targetCount: '0', registerCount: '0' }
+          [result.product.id]: { targetCount: '0', registerCount: '0' }
         }));
       }
       setStatus(`${result.product.name} wurde angelegt.`);
@@ -398,7 +396,7 @@ function App() {
       if (result.product.isEasyCount) {
         setEasyCounts((items) => ({
           ...items,
-          [result.product.id]: items[result.product.id] ?? { startingCount: '0', targetCount: '0', registerCount: '0' }
+          [result.product.id]: items[result.product.id] ?? { targetCount: '0', registerCount: '0' }
         }));
       } else {
         setEasyCounts((items) => {
@@ -505,7 +503,6 @@ function App() {
       const quantityPerPoint = Number(product.easyCountUnitQty ?? 1) || 1;
       const lastCount = Math.round(product.current / quantityPerPoint);
       const values = easyCounts[product.id] ?? {
-        startingCount: String(lastCount),
         targetCount: String(lastCount),
         registerCount: String(lastCount)
       };
@@ -616,7 +613,7 @@ function App() {
             onChange={(productId, field, value) => setEasyCounts((items) => ({
               ...items,
               [productId]: {
-                ...(items[productId] ?? { startingCount: '0', targetCount: '0', registerCount: '0' }),
+                ...(items[productId] ?? { targetCount: '0', registerCount: '0' }),
                 [field]: value
               }
             }))}
@@ -846,7 +843,6 @@ function EasyCount({
           const quantityPerPoint = Number(product.easyCountUnitQty ?? 1) || 1;
           const lastCount = Math.round(product.current / quantityPerPoint);
           const row = values[product.id] ?? {
-            startingCount: String(lastCount),
             targetCount: String(lastCount),
             registerCount: String(lastCount)
           };
