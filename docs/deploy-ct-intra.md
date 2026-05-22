@@ -1,8 +1,9 @@
 # Deploy Pub-O on ct-intra
 
-This deployment runs Pub-O as three Docker services:
+This deployment runs Pub-O as four Docker services:
 
-- `web`: Nginx serving the PWA and reverse-proxying API routes
+- `app`: Nginx serving the usable app
+- `dash`: Nginx serving the admin dashboard
 - `api`: Fastify API
 - `postgres`: PostgreSQL database with a persistent Docker volume
 
@@ -140,11 +141,10 @@ The Docker-side origin remains plain HTTP inside the private Docker network. Pub
 
 Recommended Cloudflare Public Hostname settings:
 
-- Route `https://int.app.pub-o.com` to `http://pubo_web:8080`.
-- Route `https://int.dash.pub-o.com` to `http://pubo_web:8080`.
+- Route `https://int.app.pub-o.com` to `http://pubo_app:8080`.
+- Route `https://int.dash.pub-o.com` to `http://pubo_dash:8080`.
 - Route `https://int.api.pub-o.com` to `http://pubo_api:4000`.
 - Attach cloudflared to `pubo_network` so those Docker DNS names resolve.
-- The deploy script also adds the Docker network alias `pub_o` to the web container for compatibility with Cloudflare-managed tunnel targets such as `http://pub_o:8080`.
 - SSL/TLS mode: Full.
 - Edge Certificates: Always Use HTTPS enabled.
 - Minimum TLS version: TLS 1.2 or newer.

@@ -31,7 +31,9 @@ NETWORK="${APP_NAME}_network"
 DB_VOLUME="${APP_NAME}_postgres_data"
 DB_CONTAINER="${APP_NAME}_postgres"
 API_CONTAINER="${APP_NAME}_api"
-WEB_CONTAINER="${APP_NAME}_web"
+APP_CONTAINER="${APP_NAME}_app"
+DASH_CONTAINER="${APP_NAME}_dash"
+LEGACY_WEB_CONTAINER="${APP_NAME}_web"
 API_IMAGE="${APP_NAME}_api:latest"
 WEB_IMAGE="${APP_NAME}_web:latest"
 CLOUDFLARED_CONTAINER="${CLOUDFLARED_CONTAINER:-relaxed_wilbur}"
@@ -88,13 +90,22 @@ docker_cmd run -d \
   -e CORS_ORIGIN="$CORS_ORIGIN" \
   "$API_IMAGE" >/dev/null
 
-docker_cmd rm -f "$WEB_CONTAINER" >/dev/null 2>&1 || true
+docker_cmd rm -f "$LEGACY_WEB_CONTAINER" "$APP_CONTAINER" "$DASH_CONTAINER" >/dev/null 2>&1 || true
 docker_cmd run -d \
-  --name "$WEB_CONTAINER" \
+  --name "$APP_CONTAINER" \
   --restart unless-stopped \
   --network "$NETWORK" \
-  --network-alias pub_o \
+  --network-alias pubo_app \
+  --network-alias app \
   -p "${PUBO_HTTP_PORT}:80" \
+  "$WEB_IMAGE" >/dev/null
+
+docker_cmd run -d \
+  --name "$DASH_CONTAINER" \
+  --restart unless-stopped \
+  --network "$NETWORK" \
+  --network-alias pubo_dash \
+  --network-alias dash \
   "$WEB_IMAGE" >/dev/null
 
 echo "Pub-O is running on http://ct-intra:${PUBO_HTTP_PORT}"

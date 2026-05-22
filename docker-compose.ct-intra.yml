@@ -45,15 +45,25 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET in .env.ct-intra}
     command: ["npx", "prisma", "db", "push", "--schema", "packages/database/prisma/schema.prisma"]
 
-  web:
+  app:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+    container_name: pubo_app
     restart: unless-stopped
     depends_on:
       - api
     ports:
       - "${PUBO_HTTP_PORT:-8080}:80"
+
+  dash:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: pubo_dash
+    restart: unless-stopped
+    depends_on:
+      - api
 
 volumes:
   pubo_postgres_data:
