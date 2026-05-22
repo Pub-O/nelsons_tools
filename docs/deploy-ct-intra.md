@@ -20,7 +20,7 @@ Edit `.env.ct-intra` and replace all secrets:
 POSTGRES_PASSWORD=...
 JWT_ACCESS_SECRET=...
 JWT_REFRESH_SECRET=...
-CORS_ORIGIN=https://int-web.pub-o.com
+CORS_ORIGIN=https://web-int.pub-o.com
 PUBO_HTTP_PORT=8080
 ```
 
@@ -61,10 +61,10 @@ http://ct-intra:8080
 Public access should use the Cloudflare Tunnel URL:
 
 ```text
-https://int-web.pub-o.com
+https://web-int.pub-o.com
 ```
 
-The browser-facing app uses same-origin API calls through `https://int-web.pub-o.com/api/*`, so a separate public API hostname is not required for normal app use.
+The browser-facing app uses same-origin API calls through `https://web-int.pub-o.com/api/*`, so `api-int.pub-o.com` is only needed for direct API access outside the web app.
 
 If port `80` is free on `ct-intra`, set this in `.env.ct-intra`:
 
@@ -136,9 +136,10 @@ http://ct-intra:8080/docs
 
 The Docker-side origin remains plain HTTP inside the private Docker network. Public HTTPS is terminated by Cloudflare Tunnel, and Nginx adds strict browser security headers.
 
-Recommended Cloudflare settings for `int-web.pub-o.com`:
+Recommended Cloudflare settings for `web-int.pub-o.com`:
 
-- Route only `https://int-web.pub-o.com` to the Pub-O service.
+- Route `https://web-int.pub-o.com` to the Pub-O web service.
+- If direct API access is needed, route `https://api-int.pub-o.com` to the Pub-O API service or to the same web service and its `/api/*` proxy.
 - Tunnel service target: `http://pubo_web:80` if cloudflared is attached to `pubo_network`, or `http://ct-intra:8080` from the host network.
 - The deploy script also adds the Docker network alias `pub_o` to the web container for compatibility with Cloudflare-managed tunnel targets such as `http://pub_o:8080`.
 - SSL/TLS mode: Full.
