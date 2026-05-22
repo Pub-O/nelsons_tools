@@ -59,8 +59,13 @@ const apiBase = window.location.hostname === 'int-web.pub-o.com'
   ? 'https://int-api.pub-o.com/api'
   : '/api';
 
+type AppArea = 'app' | 'admin';
+type AdminTab = 'overview' | 'modules' | 'products' | 'team' | 'location';
+
 function App() {
+  const [activeArea, setActiveArea] = useState<AppArea>('app');
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [activeAdminTab, setActiveAdminTab] = useState<AdminTab>('overview');
   const [token, setToken] = useState(() => localStorage.getItem('puboAccessToken') ?? '');
   const [user, setUser] = useState<SessionUser | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -235,7 +240,8 @@ function App() {
   function handleAuthenticated(accessToken: string) {
     localStorage.setItem('puboAccessToken', accessToken);
     setToken(accessToken);
-    setActiveTab('admin');
+    setActiveArea('admin');
+    setActiveAdminTab('overview');
     setStatus('Admin-Zugang aktiv.');
   }
 
@@ -252,7 +258,9 @@ function App() {
     setEasyCountRuns([]);
     setScheduleShifts([]);
     setVacations([]);
+    setActiveArea('app');
     setActiveTab('dashboard');
+    setActiveAdminTab('overview');
   }
 
   async function createProduct(data: ProductFormData) {
@@ -482,7 +490,7 @@ function App() {
         method: 'POST',
         body: JSON.stringify({
           locationId: activeLocationId,
-          note: 'Admin-Zählstand',
+          note: 'Zählstand',
           lines
         })
       });
@@ -494,84 +502,79 @@ function App() {
   }
 
   return (
-    <main className="app-shell">
+    <main className={activeArea === 'admin' ? 'app-shell admin-shell' : 'app-shell'}>
       <header className="top-bar">
         <div className="brand-lockup">
           <img src="/img/pub-o-logo.png" alt="" />
           <div>
             <strong>Pub-O</strong>
-            <span>{activeLocation?.name ?? 'Pub-Organizer'}</span>
+            <span>{activeArea === 'admin' ? 'Admin Dashboard' : activeLocation?.name ?? 'Pub-Organizer'}</span>
           </div>
         </div>
-        {token ? (
-          <button className="icon-button" aria-label="Abmelden" onClick={logout}>
-            <LogOut size={20} />
-          </button>
-        ) : (
-          <button className="icon-button" aria-label="Admin öffnen" onClick={() => setActiveTab('admin')}>
-            <ShieldCheck size={20} />
-          </button>
-        )}
+        <div className="top-actions">
+          {activeArea === 'admin' && (
+            <button className="text-button compact-button" type="button" onClick={() => setActiveArea('app')}>
+              <Home size={17} />
+              App
+            </button>
+          )}
+          {activeArea === 'app' && (
+            <button className="text-button compact-button" type="button" onClick={() => setActiveArea('admin')}>
+              <ShieldCheck size={17} />
+              Admin
+            </button>
+          )}
+          {token && (
+            <button className="icon-button" aria-label="Abmelden" onClick={logout}>
+              <LogOut size={20} />
+            </button>
+          )}
+        </div>
       </header>
 
       <section className="content">
         {status && <div className="status-line">{status}</div>}
-        {activeTab === 'dashboard' && (
-          <Dashboard
+        {activeArea === 'app' ? (
+          <AppWorkspace
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
             lowStock={lowStock}
+            products={inventory}
             productCount={products.length}
             employeeCount={employees.length}
             shiftCount={scheduleShifts.length}
-            locationName={activeLocation?.name}
-            onOpen={setActiveTab}
-          />
-        )}
-        {activeTab === 'stock' && (
-          <Stock
-            products={inventory}
+            activeLocationName={activeLocation?.name}
             counts={counts}
-            onCountChange={(productId, value) => setCounts((items) => ({ ...items, [productId]: value }))}
-            onCreateProduct={createProduct}
-            onUpdateProduct={updateProduct}
-            onSaveStockCount={saveStockCount}
-          />
-        )}
-        {activeTab === 'shopping' && <Shopping lowStock={lowStock} />}
-        {activeTab === 'easy-count' && (
-          <EasyCount
-            products={easyCountProducts}
-            values={easyCounts}
-            runs={easyCountRuns}
-            onChange={(productId, field, value) => setEasyCounts((items) => ({
-              ...items,
-              [productId]: {
-                ...(items[productId] ?? { targetCount: '0', registerCount: '0' }),
-                [field]: value
-              }
-            }))}
-            onSave={saveEasyCount}
-          />
-        )}
-        {activeTab === 'shifts' && (
-          <Schedule
-            month={scheduleMonth}
-            shifts={scheduleShifts}
+            setCounts={setCounts}
+            easyCountProducts={easyCountProducts}
+            easyCounts={easyCounts}
+            setEasyCounts={setEasyCounts}
+            easyCountRuns={easyCountRuns}
+            scheduleMonth={scheduleMonth}
+            scheduleShifts={scheduleShifts}
             vacations={vacations}
             employees={employees}
-            onMonthChange={setScheduleMonth}
-            onCreateShift={createShift}
-            onCreateVacation={createVacation}
-            onCreateEmployee={createEmployee}
+            setScheduleMonth={setScheduleMonth}
+            createShift={createShift}
+            createVacation={createVacation}
+            saveEasyCount={saveEasyCount}
+            saveStockCount={saveStockCount}
+            onOpenAdmin={() => setActiveArea('admin')}
           />
-        )}
-        {activeTab === 'checklists' && <Checklists />}
-        {activeTab === 'admin' && (
+        ) : (
           token ? (
-            <AdminPanel
+            <AdminWorkspace
+              activeAdminTab={activeAdminTab}
+              setActiveAdminTab={setActiveAdminTab}
               user={user}
               locations={locations}
               activeLocationId={activeLocationId}
+              products={products}
+              employees={employees}
               onLocationChange={setActiveLocationId}
+              onCreateProduct={createProduct}
+              onUpdateProduct={updateProduct}
+              onCreateEmployee={createEmployee}
             />
           ) : (
             <AuthPanel onAuthenticated={handleAuthenticated} setStatus={setStatus} />
@@ -579,14 +582,120 @@ function App() {
         )}
       </section>
 
-      <nav className="bottom-nav" aria-label="Hauptnavigation">
-        {navigationModules.map((module) => (
-          <NavButton tab={module.id} activeTab={activeTab} label={module.shortLabel} onClick={setActiveTab} key={module.id}>
-            {moduleIcon(module.id, 21)}
-          </NavButton>
-        ))}
-      </nav>
+      {activeArea === 'app' && (
+        <nav className="bottom-nav" aria-label="Hauptnavigation">
+          {navigationModules.map((module) => (
+            <NavButton tab={module.id} activeTab={activeTab} label={module.shortLabel} onClick={setActiveTab} key={module.id}>
+              {moduleIcon(module.id, 21)}
+            </NavButton>
+          ))}
+        </nav>
+      )}
     </main>
+  );
+}
+
+function AppWorkspace({
+  activeTab,
+  setActiveTab,
+  lowStock,
+  products,
+  productCount,
+  employeeCount,
+  shiftCount,
+  activeLocationName,
+  counts,
+  setCounts,
+  easyCountProducts,
+  easyCounts,
+  setEasyCounts,
+  easyCountRuns,
+  scheduleMonth,
+  scheduleShifts,
+  vacations,
+  employees,
+  setScheduleMonth,
+  createShift,
+  createVacation,
+  saveEasyCount,
+  saveStockCount,
+  onOpenAdmin
+}: {
+  activeTab: Tab;
+  setActiveTab: (tab: Tab) => void;
+  lowStock: InventoryProduct[];
+  products: InventoryProduct[];
+  productCount: number;
+  employeeCount: number;
+  shiftCount: number;
+  activeLocationName?: string;
+  counts: Record<string, string>;
+  setCounts: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  easyCountProducts: InventoryProduct[];
+  easyCounts: Record<string, EasyCountInput>;
+  setEasyCounts: React.Dispatch<React.SetStateAction<Record<string, EasyCountInput>>>;
+  easyCountRuns: EasyCountRun[];
+  scheduleMonth: Date;
+  scheduleShifts: Shift[];
+  vacations: Vacation[];
+  employees: Employee[];
+  setScheduleMonth: (month: Date) => void;
+  createShift: (data: { employeeId: string; date: string; startsAt: string; endsAt: string; title: string }) => void;
+  createVacation: (data: { employeeId: string; startsOn: string; endsOn: string; note: string }) => void;
+  saveEasyCount: () => void;
+  saveStockCount: () => void;
+  onOpenAdmin: () => void;
+}) {
+  return (
+    <>
+      {activeTab === 'dashboard' && (
+        <Dashboard
+          lowStock={lowStock}
+          productCount={productCount}
+          employeeCount={employeeCount}
+          shiftCount={shiftCount}
+          locationName={activeLocationName}
+          onOpen={setActiveTab}
+          onOpenAdmin={onOpenAdmin}
+        />
+      )}
+      {activeTab === 'stock' && (
+        <Stock
+          products={products}
+          counts={counts}
+          onCountChange={(productId, value) => setCounts((items) => ({ ...items, [productId]: value }))}
+          onSaveStockCount={saveStockCount}
+        />
+      )}
+      {activeTab === 'shopping' && <Shopping lowStock={lowStock} />}
+      {activeTab === 'easy-count' && (
+        <EasyCount
+          products={easyCountProducts}
+          values={easyCounts}
+          runs={easyCountRuns}
+          onChange={(productId, field, value) => setEasyCounts((items) => ({
+            ...items,
+            [productId]: {
+              ...(items[productId] ?? { targetCount: '0', registerCount: '0' }),
+              [field]: value
+            }
+          }))}
+          onSave={saveEasyCount}
+        />
+      )}
+      {activeTab === 'shifts' && (
+        <Schedule
+          month={scheduleMonth}
+          shifts={scheduleShifts}
+          vacations={vacations}
+          employees={employees}
+          onMonthChange={setScheduleMonth}
+          onCreateShift={createShift}
+          onCreateVacation={createVacation}
+        />
+      )}
+      {activeTab === 'checklists' && <Checklists />}
+    </>
   );
 }
 
@@ -597,8 +706,7 @@ function moduleIcon(tab: Tab, size: number) {
     shopping: <ShoppingCart size={size} />,
     'easy-count': <Calculator size={size} />,
     checklists: <ListChecks size={size} />,
-    shifts: <CalendarDays size={size} />,
-    admin: <ShieldCheck size={size} />
+    shifts: <CalendarDays size={size} />
   };
   return icons[tab];
 }
@@ -628,15 +736,11 @@ function Stock({
   products,
   counts,
   onCountChange,
-  onCreateProduct,
-  onUpdateProduct,
   onSaveStockCount
 }: {
   products: InventoryProduct[];
   counts: Record<string, string>;
   onCountChange: (productId: string, value: string) => void;
-  onCreateProduct: (data: ProductFormData) => void;
-  onUpdateProduct: (productId: string, data: ProductFormData) => void;
   onSaveStockCount: () => void;
 }) {
   return (
@@ -667,8 +771,6 @@ function Stock({
           );
         })}
       </div>
-      <ProductEditor products={products} onUpdateProduct={onUpdateProduct} />
-      <ProductForm onCreateProduct={onCreateProduct} />
       <section className="section">
         <h2>Zählstand</h2>
         <div className="count-list">
@@ -852,7 +954,145 @@ function AuthPanel({
   );
 }
 
-function AdminPanel({
+function AdminWorkspace({
+  activeAdminTab,
+  setActiveAdminTab,
+  user,
+  locations,
+  activeLocationId,
+  products,
+  employees,
+  onLocationChange,
+  onCreateProduct,
+  onUpdateProduct,
+  onCreateEmployee
+}: {
+  activeAdminTab: AdminTab;
+  setActiveAdminTab: (tab: AdminTab) => void;
+  user: SessionUser | null;
+  locations: Location[];
+  activeLocationId: string;
+  products: Product[];
+  employees: Employee[];
+  onLocationChange: (locationId: string) => void;
+  onCreateProduct: (data: ProductFormData) => void;
+  onUpdateProduct: (productId: string, data: ProductFormData) => void;
+  onCreateEmployee: (data: Omit<Employee, 'id'>) => void;
+}) {
+  const activeLocation = locations.find((location) => location.id === activeLocationId);
+
+  return (
+    <section className="admin-workspace">
+      <div className="admin-hero">
+        <div>
+          <span className="eyebrow">Konfiguration</span>
+          <h1>Admin Dashboard</h1>
+          <p>{activeLocation?.name ?? 'Standort'} verwalten, Module vorbereiten und Betriebsdaten konfigurieren.</p>
+        </div>
+        <ShieldCheck size={42} />
+      </div>
+
+      <nav className="admin-nav" aria-label="Admin Navigation">
+        <AdminNavButton tab="overview" activeTab={activeAdminTab} label="Übersicht" onClick={setActiveAdminTab} />
+        <AdminNavButton tab="modules" activeTab={activeAdminTab} label="Module & Abo" onClick={setActiveAdminTab} />
+        <AdminNavButton tab="products" activeTab={activeAdminTab} label="Produkte" onClick={setActiveAdminTab} />
+        <AdminNavButton tab="team" activeTab={activeAdminTab} label="Team" onClick={setActiveAdminTab} />
+        <AdminNavButton tab="location" activeTab={activeAdminTab} label="Standort" onClick={setActiveAdminTab} />
+      </nav>
+
+      {activeAdminTab === 'overview' && (
+        <AdminOverview
+          user={user}
+          locationName={activeLocation?.name}
+          productCount={products.length}
+          employeeCount={employees.length}
+          onOpen={setActiveAdminTab}
+        />
+      )}
+      {activeAdminTab === 'modules' && <ModulePlanOverview />}
+      {activeAdminTab === 'products' && (
+        <section className="section">
+          <ProductEditor products={products} onUpdateProduct={onUpdateProduct} />
+          <ProductForm onCreateProduct={onCreateProduct} />
+        </section>
+      )}
+      {activeAdminTab === 'team' && <EmployeeForm employees={employees} onCreateEmployee={onCreateEmployee} />}
+      {activeAdminTab === 'location' && (
+        <LocationSettings
+          user={user}
+          locations={locations}
+          activeLocationId={activeLocationId}
+          onLocationChange={onLocationChange}
+        />
+      )}
+    </section>
+  );
+}
+
+function AdminNavButton({
+  tab,
+  activeTab,
+  label,
+  onClick
+}: {
+  tab: AdminTab;
+  activeTab: AdminTab;
+  label: string;
+  onClick: (tab: AdminTab) => void;
+}) {
+  return (
+    <button className={activeTab === tab ? 'active' : ''} type="button" onClick={() => onClick(tab)}>
+      {label}
+    </button>
+  );
+}
+
+function AdminOverview({
+  user,
+  locationName,
+  productCount,
+  employeeCount,
+  onOpen
+}: {
+  user: SessionUser | null;
+  locationName?: string;
+  productCount: number;
+  employeeCount: number;
+  onOpen: (tab: AdminTab) => void;
+}) {
+  return (
+    <section className="section">
+      <div className="admin-summary">
+        <strong>{user?.name ?? 'Admin'}</strong>
+        <span>{locationName ?? 'Kein Standort ausgewählt'} · Zugang aktiv</span>
+      </div>
+      <div className="admin-config-grid">
+        <button className="admin-config-card" type="button" onClick={() => onOpen('modules')}>
+          <ShieldCheck size={22} />
+          <strong>Module & Abo</strong>
+          <span>Basisfunktionen und Add-ons vorbereiten.</span>
+        </button>
+        <button className="admin-config-card" type="button" onClick={() => onOpen('products')}>
+          <Package size={22} />
+          <strong>{productCount} Produkte</strong>
+          <span>Sortiment, Gebinde und Zielbestände konfigurieren.</span>
+        </button>
+        <button className="admin-config-card" type="button" onClick={() => onOpen('team')}>
+          <Users size={22} />
+          <strong>{employeeCount} Teamprofile</strong>
+          <span>Rechte und Dienstplan-Zugriff verwalten.</span>
+        </button>
+        <button className="admin-config-card" type="button" onClick={() => onOpen('location')}>
+          <Home size={22} />
+          <strong>Standort</strong>
+          <span>Aktiven Betrieb und Organisation prüfen.</span>
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function LocationSettings({
   user,
   locations,
   activeLocationId,
@@ -865,20 +1105,19 @@ function AdminPanel({
 }) {
   return (
     <section className="section">
-      <h2>Admin</h2>
+      <h2>Standort</h2>
       <div className="admin-summary">
-        <strong>{user?.name ?? 'Admin'}</strong>
+        <strong>{user?.memberships?.[0]?.organization.name ?? 'Organisation'}</strong>
         <span>Standort und Zugang aktiv.</span>
       </div>
       <label className="select-row">
-        Standort
+        Aktiver Standort
         <select value={activeLocationId} onChange={(event) => onLocationChange(event.target.value)}>
           {locations.map((location) => (
             <option key={location.id} value={location.id}>{location.name}</option>
           ))}
         </select>
       </label>
-      <ModulePlanOverview />
     </section>
   );
 }
@@ -1257,8 +1496,7 @@ function Schedule({
   employees,
   onMonthChange,
   onCreateShift,
-  onCreateVacation,
-  onCreateEmployee
+  onCreateVacation
 }: {
   month: Date;
   shifts: Shift[];
@@ -1267,7 +1505,6 @@ function Schedule({
   onMonthChange: (month: Date) => void;
   onCreateShift: (data: { employeeId: string; date: string; startsAt: string; endsAt: string; title: string }) => void;
   onCreateVacation: (data: { employeeId: string; startsOn: string; endsOn: string; note: string }) => void;
-  onCreateEmployee: (data: Omit<Employee, 'id'>) => void;
 }) {
   const [shiftForm, setShiftForm] = useState({
     employeeId: employees[0]?.id ?? '',
@@ -1357,8 +1594,6 @@ function Schedule({
           );
         })}
       </div>
-
-      <EmployeeForm employees={employees} onCreateEmployee={onCreateEmployee} />
 
       <form className="form-card" onSubmit={submitShift}>
         <h2>Dienst eintragen</h2>

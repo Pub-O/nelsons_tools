@@ -59,14 +59,6 @@ export const moduleCatalog: PubOModule[] = [
     tier: 'paid-addon',
     summary: 'Dienste, Mitarbeiterprofile und Urlaube planen.',
     nav: true
-  },
-  {
-    id: 'admin',
-    label: 'Admin',
-    shortLabel: 'Admin',
-    tier: 'core',
-    summary: 'Standort, Zugang und Modulstatus verwalten.',
-    nav: true
   }
 ];
 

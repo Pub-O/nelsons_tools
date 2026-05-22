@@ -19,7 +19,8 @@ export function Dashboard({
   employeeCount,
   shiftCount,
   locationName,
-  onOpen
+  onOpen,
+  onOpenAdmin
 }: {
   lowStock: InventoryProduct[];
   productCount: number;
@@ -27,6 +28,7 @@ export function Dashboard({
   shiftCount: number;
   locationName?: string;
   onOpen: (tab: Tab) => void;
+  onOpenAdmin: () => void;
 }) {
   const priorityStock = lowStock.slice(0, 3);
 
@@ -94,7 +96,7 @@ export function Dashboard({
       <section className="quick-action-grid" aria-label="Schnellzugriff">
         <QuickAction label="Easy Count" detail="Nachbonnage" icon={<Calculator size={20} />} onClick={() => onOpen('easy-count')} />
         <QuickAction label="Closing" detail="Liste öffnen" icon={<ListChecks size={20} />} onClick={() => onOpen('checklists')} />
-        <QuickAction label="Admin" detail="Standort und Login" icon={<ShieldCheck size={20} />} onClick={() => onOpen('admin')} />
+        <QuickAction label="Admin" detail="Konfiguration" icon={<ShieldCheck size={20} />} onClick={onOpenAdmin} />
       </section>
     </section>
   );
@@ -124,15 +126,17 @@ function QuickAction({
   label,
   detail,
   icon,
-  onClick
+  onClick,
+  disabled = false
 }: {
   label: string;
   detail: string;
   icon: ReactNode;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
-    <button className="quick-action" type="button" onClick={onClick}>
+    <button className="quick-action" type="button" onClick={onClick} disabled={disabled}>
       <span>{icon}</span>
       <strong>{label}</strong>
       <small>{detail}</small>

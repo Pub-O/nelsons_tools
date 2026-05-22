@@ -1,4 +1,4 @@
-export type Tab = 'dashboard' | 'stock' | 'shopping' | 'easy-count' | 'shifts' | 'checklists' | 'admin';
+export type Tab = 'dashboard' | 'stock' | 'shopping' | 'easy-count' | 'shifts' | 'checklists';
 
 export type Product = {
   id: string;
