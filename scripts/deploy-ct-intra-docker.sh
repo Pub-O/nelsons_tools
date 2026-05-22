@@ -108,5 +108,9 @@ docker_cmd run -d \
   --network-alias dash \
   "$WEB_IMAGE" >/dev/null
 
+for CLOUDFLARED in $(docker_cmd ps --filter ancestor=cloudflare/cloudflared:latest --format '{{.Names}}'); do
+  docker_cmd restart "$CLOUDFLARED" >/dev/null
+done
+
 echo "Pub-O is running on http://ct-intra:${PUBO_HTTP_PORT}"
 echo "API health: http://ct-intra:${PUBO_HTTP_PORT}/health"
