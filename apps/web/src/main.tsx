@@ -559,7 +559,6 @@ function App() {
             createVacation={createVacation}
             saveEasyCount={saveEasyCount}
             saveStockCount={saveStockCount}
-            onOpenAdmin={() => setActiveArea('admin')}
           />
         ) : (
           token ? (
@@ -618,8 +617,7 @@ function AppWorkspace({
   createShift,
   createVacation,
   saveEasyCount,
-  saveStockCount,
-  onOpenAdmin
+  saveStockCount
 }: {
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
@@ -644,7 +642,6 @@ function AppWorkspace({
   createVacation: (data: { employeeId: string; startsOn: string; endsOn: string; note: string }) => void;
   saveEasyCount: () => void;
   saveStockCount: () => void;
-  onOpenAdmin: () => void;
 }) {
   return (
     <>
@@ -656,7 +653,6 @@ function AppWorkspace({
           shiftCount={shiftCount}
           locationName={activeLocationName}
           onOpen={setActiveTab}
-          onOpenAdmin={onOpenAdmin}
         />
       )}
       {activeTab === 'stock' && (

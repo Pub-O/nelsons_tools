@@ -7,8 +7,7 @@ import {
   Check,
   ClipboardCheck,
   ListChecks,
-  Package,
-  ShieldCheck
+  Package
 } from 'lucide-react';
 import { InventoryProduct, Tab } from '../../types';
 import { formatAmount, formatUnitLabel } from '../../utils';
@@ -19,8 +18,7 @@ export function Dashboard({
   employeeCount,
   shiftCount,
   locationName,
-  onOpen,
-  onOpenAdmin
+  onOpen
 }: {
   lowStock: InventoryProduct[];
   productCount: number;
@@ -28,7 +26,6 @@ export function Dashboard({
   shiftCount: number;
   locationName?: string;
   onOpen: (tab: Tab) => void;
-  onOpenAdmin: () => void;
 }) {
   const priorityStock = lowStock.slice(0, 3);
 
@@ -96,7 +93,7 @@ export function Dashboard({
       <section className="quick-action-grid" aria-label="Schnellzugriff">
         <QuickAction label="Easy Count" detail="Nachbonnage" icon={<Calculator size={20} />} onClick={() => onOpen('easy-count')} />
         <QuickAction label="Closing" detail="Liste öffnen" icon={<ListChecks size={20} />} onClick={() => onOpen('checklists')} />
-        <QuickAction label="Admin" detail="Konfiguration" icon={<ShieldCheck size={20} />} onClick={onOpenAdmin} />
+        <QuickAction label="Bestand" detail="Zählstand öffnen" icon={<Package size={20} />} onClick={() => onOpen('stock')} />
       </section>
     </section>
   );
