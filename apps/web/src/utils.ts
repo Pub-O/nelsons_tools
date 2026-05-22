@@ -2,8 +2,9 @@ import { Product } from './types';
 import {
   easyCountQtyFromLiters,
   easyCountUnitQty,
+  type EasyCountMeasureUnit,
   formatEasyCountQty,
-  inferEasyCountMeasureUnit
+  normalizeEasyCountMeasureUnit
 } from './easyCount';
 
 export function formatPackage(product: Product) {
@@ -23,7 +24,8 @@ export function formatNullableAmount(value: Product[keyof Product]) {
 }
 
 export function productToForm(product?: Product) {
-  const easyCountMeasureUnit = inferEasyCountMeasureUnit(product?.easyCountUnitQty);
+  const easyCountMeasureUnit = normalizeEasyCountMeasureUnit(product?.easyCountMeasureUnit)
+    ?? 'Milliliter';
 
   return {
     name: product?.name ?? '',
@@ -60,10 +62,18 @@ export function formatStockTargetUnit(product: Product) {
 
 export function formatPointDefinition(product: Product) {
   const unitQty = easyCountUnitQty(product.easyCountUnitQty);
-  if (unitQty < 1) {
-    return `1 Point = ${formatAmount(unitQty * 1000)} ml`;
+  const measureUnit = normalizeEasyCountMeasureUnit(product.easyCountMeasureUnit) ?? 'Milliliter';
+  return `1 Point = ${formatAmount(easyCountQtyFromLiters(unitQty, measureUnit))} ${formatEasyCountMeasureUnit(measureUnit)}`;
+}
+
+function formatEasyCountMeasureUnit(unit: EasyCountMeasureUnit) {
+  if (unit === 'Liter') {
+    return 'L';
   }
-  return `1 Point = ${formatAmount(unitQty)} L`;
+  if (unit === 'Milliliter') {
+    return 'ml';
+  }
+  return 'cl';
 }
 
 export function startOfMonth(date: Date) {

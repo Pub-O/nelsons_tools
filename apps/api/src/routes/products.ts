@@ -16,7 +16,12 @@ const productBody = Type.Object({
   reorderPoint: Type.Optional(Type.Number({ minimum: 0 })),
   parLevel: Type.Optional(Type.Number({ minimum: 0 })),
   isEasyCount: Type.Optional(Type.Boolean()),
-  easyCountUnitQty: Type.Optional(Type.Number({ minimum: 0 }))
+  easyCountUnitQty: Type.Optional(Type.Number({ minimum: 0 })),
+  easyCountMeasureUnit: Type.Optional(Type.Union([
+    Type.Literal('Liter'),
+    Type.Literal('Milliliter'),
+    Type.Literal('Centiliter')
+  ]))
 });
 
 export async function productRoutes(app: FastifyInstance) {
@@ -54,6 +59,7 @@ export async function productRoutes(app: FastifyInstance) {
       parLevel?: number;
       isEasyCount?: boolean;
       easyCountUnitQty?: number;
+      easyCountMeasureUnit?: 'Liter' | 'Milliliter' | 'Centiliter';
     };
 
     const membership = await requireOrganizationManager(request, reply, body.organizationId);
@@ -73,7 +79,8 @@ export async function productRoutes(app: FastifyInstance) {
         reorderPoint: body.reorderPoint,
         parLevel: body.parLevel,
         isEasyCount: body.isEasyCount ?? false,
-        easyCountUnitQty: body.isEasyCount ? body.easyCountUnitQty ?? EASY_COUNT_DEFAULT_UNIT_QTY : undefined
+        easyCountUnitQty: body.isEasyCount ? body.easyCountUnitQty ?? EASY_COUNT_DEFAULT_UNIT_QTY : undefined,
+        easyCountMeasureUnit: body.isEasyCount ? body.easyCountMeasureUnit ?? 'Milliliter' : undefined
       }
     });
 
@@ -100,6 +107,7 @@ export async function productRoutes(app: FastifyInstance) {
       parLevel?: number;
       isEasyCount?: boolean;
       easyCountUnitQty?: number;
+      easyCountMeasureUnit?: 'Liter' | 'Milliliter' | 'Centiliter';
     };
 
     const existing = await prisma.product.findFirst({
@@ -130,7 +138,8 @@ export async function productRoutes(app: FastifyInstance) {
         reorderPoint: body.reorderPoint,
         parLevel: body.parLevel,
         isEasyCount: body.isEasyCount ?? false,
-        easyCountUnitQty: body.isEasyCount ? body.easyCountUnitQty ?? EASY_COUNT_DEFAULT_UNIT_QTY : null
+        easyCountUnitQty: body.isEasyCount ? body.easyCountUnitQty ?? EASY_COUNT_DEFAULT_UNIT_QTY : null,
+        easyCountMeasureUnit: body.isEasyCount ? body.easyCountMeasureUnit ?? 'Milliliter' : null
       },
       include: { category: true }
     });

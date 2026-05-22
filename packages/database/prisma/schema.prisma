@@ -149,6 +149,7 @@ model Product {
   reorderPoint       Decimal?            @db.Decimal(12, 3)
   isEasyCount        Boolean             @default(false)
   easyCountUnitQty   Decimal?            @db.Decimal(12, 3)
+  easyCountMeasureUnit String?
   isActive           Boolean             @default(true)
   organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   category           ProductCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)

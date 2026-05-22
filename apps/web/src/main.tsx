@@ -293,7 +293,8 @@ function App() {
           parLevel: data.parLevel,
           reorderPoint: data.reorderPoint,
           isEasyCount: data.isEasyCount,
-          easyCountUnitQty: data.isEasyCount ? data.easyCountUnitQty : undefined
+          easyCountUnitQty: data.isEasyCount ? data.easyCountUnitQty : undefined,
+          easyCountMeasureUnit: data.isEasyCount ? data.easyCountMeasureUnit : undefined
         })
       });
       setProducts((items) => [...items, result.product].sort((a, b) => a.name.localeCompare(b.name)));
@@ -329,7 +330,8 @@ function App() {
           parLevel: data.parLevel,
           reorderPoint: data.reorderPoint,
           isEasyCount: data.isEasyCount,
-          easyCountUnitQty: data.isEasyCount ? data.easyCountUnitQty : undefined
+          easyCountUnitQty: data.isEasyCount ? data.easyCountUnitQty : undefined,
+          easyCountMeasureUnit: data.isEasyCount ? data.easyCountMeasureUnit : undefined
         })
       });
       setProducts((items) => items
@@ -1270,7 +1272,8 @@ function ProductForm({
       parLevel: Number(form.parLevel || 0),
       reorderPoint: Number(form.reorderPoint || 0),
       isEasyCount: form.isEasyCount,
-      easyCountUnitQty: easyCountQtyToLiters(form.easyCountUnitQty, form.easyCountMeasureUnit)
+      easyCountUnitQty: easyCountQtyToLiters(form.easyCountUnitQty, form.easyCountMeasureUnit),
+      easyCountMeasureUnit: form.easyCountMeasureUnit
     });
     setForm({ ...form, name: '', parLevel: '0', reorderPoint: '0' });
   }
@@ -1388,7 +1391,8 @@ function ProductEditor({
       parLevel: Number(form.parLevel || 0),
       reorderPoint: Number(form.reorderPoint || 0),
       isEasyCount: form.isEasyCount,
-      easyCountUnitQty: easyCountQtyToLiters(form.easyCountUnitQty, form.easyCountMeasureUnit)
+      easyCountUnitQty: easyCountQtyToLiters(form.easyCountUnitQty, form.easyCountMeasureUnit),
+      easyCountMeasureUnit: form.easyCountMeasureUnit
     });
     setEditingProductId('');
   }

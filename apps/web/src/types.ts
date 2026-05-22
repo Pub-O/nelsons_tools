@@ -12,6 +12,7 @@ export type Product = {
   parLevel?: string | number | null;
   isEasyCount?: boolean;
   easyCountUnitQty?: string | number | null;
+  easyCountMeasureUnit?: 'Liter' | 'Milliliter' | 'Centiliter' | string | null;
 };
 
 export type ProductFormData = {
@@ -24,6 +25,7 @@ export type ProductFormData = {
   reorderPoint: number;
   isEasyCount: boolean;
   easyCountUnitQty: number;
+  easyCountMeasureUnit: 'Liter' | 'Milliliter' | 'Centiliter';
 };
 
 export type StockItem = {

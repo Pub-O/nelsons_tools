@@ -5,6 +5,13 @@ export type EasyCountMeasureUnit = 'Liter' | 'Milliliter' | 'Centiliter';
 
 export const easyCountMeasureUnits: EasyCountMeasureUnit[] = ['Liter', 'Milliliter', 'Centiliter'];
 
+export function normalizeEasyCountMeasureUnit(unit?: string | null): EasyCountMeasureUnit | null {
+  if (unit === 'Liter' || unit === 'Milliliter' || unit === 'Centiliter') {
+    return unit;
+  }
+  return null;
+}
+
 export const easyCountPresets = [
   {
     name: 'Viertel',
