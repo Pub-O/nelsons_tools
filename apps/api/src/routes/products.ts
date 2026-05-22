@@ -3,6 +3,8 @@ import { Type } from '@sinclair/typebox';
 import { prisma } from '@pub-o/database';
 import { requireAuth, requireOrganizationManager } from '../auth.js';
 
+const EASY_COUNT_DEFAULT_UNIT_QTY = 0.05;
+
 const productBody = Type.Object({
   organizationId: Type.String({ format: 'uuid' }),
   categoryId: Type.Optional(Type.String({ format: 'uuid' })),
@@ -71,7 +73,7 @@ export async function productRoutes(app: FastifyInstance) {
         reorderPoint: body.reorderPoint,
         parLevel: body.parLevel,
         isEasyCount: body.isEasyCount ?? false,
-        easyCountUnitQty: body.isEasyCount ? body.easyCountUnitQty : undefined
+        easyCountUnitQty: body.isEasyCount ? body.easyCountUnitQty ?? EASY_COUNT_DEFAULT_UNIT_QTY : undefined
       }
     });
 
@@ -128,7 +130,7 @@ export async function productRoutes(app: FastifyInstance) {
         reorderPoint: body.reorderPoint,
         parLevel: body.parLevel,
         isEasyCount: body.isEasyCount ?? false,
-        easyCountUnitQty: body.isEasyCount ? body.easyCountUnitQty : null
+        easyCountUnitQty: body.isEasyCount ? body.easyCountUnitQty ?? EASY_COUNT_DEFAULT_UNIT_QTY : null
       },
       include: { category: true }
     });

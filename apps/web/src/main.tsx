@@ -19,6 +19,18 @@ import {
   Users
 } from 'lucide-react';
 import { Checklists } from './modules/checklists/Checklists';
+import {
+  EASY_COUNT_DEFAULT_UNIT_QTY,
+  EASY_COUNT_MINIMUM_POINTS,
+  type EasyCountMeasureUnit,
+  easyCountMeasureUnits,
+  easyCountPresetSummary,
+  easyCountQtyFromLiters,
+  easyCountQtyToLiters,
+  easyCountUnitQty,
+  formatEasyCountQty,
+  normalizeEasyCountPoints
+} from './easyCount';
 import { coreModules, navigationModules, paidAddonModules } from './modules/catalog';
 import { Dashboard } from './modules/dashboard/Dashboard';
 import { EmptyState } from './modules/shared/EmptyState';
@@ -187,7 +199,7 @@ function App() {
       setEasyCounts((existing) => {
         const next = { ...existing };
         for (const item of result.stockItems) {
-          const quantityPerPoint = Number(item.product.easyCountUnitQty ?? 1) || 1;
+          const quantityPerPoint = easyCountUnitQty(item.product.easyCountUnitQty);
           const currentPoints = Math.round(Number(item.quantity ?? 0) / quantityPerPoint);
           next[item.product.id] = {
             targetCount: String(currentPoints),
@@ -429,7 +441,7 @@ function App() {
     }
 
     const lines = easyCountProducts.map((product) => {
-      const quantityPerPoint = Number(product.easyCountUnitQty ?? 1) || 1;
+      const quantityPerPoint = easyCountUnitQty(product.easyCountUnitQty);
       const lastCount = Math.round(product.current / quantityPerPoint);
       const values = easyCounts[product.id] ?? {
         targetCount: String(lastCount),
@@ -438,8 +450,8 @@ function App() {
       return {
         productId: product.id,
         startingCount: lastCount,
-        targetCount: Number(values.targetCount || 0),
-        registerCount: Number(values.registerCount || 0)
+        targetCount: normalizeEasyCountPoints(values.targetCount),
+        registerCount: normalizeEasyCountPoints(values.registerCount)
       };
     });
 
@@ -759,7 +771,7 @@ function Stock({
               </div>
               <small>Ziel: {product.target || '-'} {formatUnitLabel(product.unit)}</small>
               {product.isEasyCount && (
-                <small>Last Count: {formatAmount(product.current / (Number(product.easyCountUnitQty ?? 1) || 1))} Punkte · {formatPointDefinition(product)}</small>
+                <small>Last Count: {formatAmount(product.current / easyCountUnitQty(product.easyCountUnitQty))} Punkte · {formatPointDefinition(product)}</small>
               )}
             </article>
           );
@@ -813,7 +825,7 @@ function EasyCount({
       <div className="count-list">
         {products.length === 0 && <EmptyState text="Aktiviere Easy Count zuerst bei einem Produkt." />}
         {products.map((product) => {
-          const quantityPerPoint = Number(product.easyCountUnitQty ?? 1) || 1;
+          const quantityPerPoint = easyCountUnitQty(product.easyCountUnitQty);
           const lastCount = Math.round(product.current / quantityPerPoint);
           const row = values[product.id] ?? {
             targetCount: String(lastCount),
@@ -840,13 +852,14 @@ function EasyCount({
               <div className="form-grid">
                 <label>
                   Lagerstand
-                  <input type="number" min="0" step="1" value={row.targetCount} onChange={(event) => onChange(product.id, 'targetCount', event.target.value)} />
+                  <input type="number" min="0" step={EASY_COUNT_MINIMUM_POINTS} value={row.targetCount} onChange={(event) => onChange(product.id, 'targetCount', event.target.value)} />
                 </label>
                 <label>
                   Kassastand
-                  <input type="number" min="0" step="1" value={row.registerCount} onChange={(event) => onChange(product.id, 'registerCount', event.target.value)} />
+                  <input type="number" min="0" step={EASY_COUNT_MINIMUM_POINTS} value={row.registerCount} onChange={(event) => onChange(product.id, 'registerCount', event.target.value)} />
                 </label>
               </div>
+              <small>{easyCountPresetSummary(quantityPerPoint)}. Unter 5 Punkten wird ignoriert.</small>
               <small>Nachzubonnieren: {formatAmount(correction)} {formatUnitLabel(product.unit)}</small>
             </article>
           );
@@ -1171,6 +1184,62 @@ function ModulePlanColumn({
   );
 }
 
+const defaultEasyCountMeasureUnit: EasyCountMeasureUnit = 'Centiliter';
+
+function defaultEasyCountDisplayQty() {
+  return formatEasyCountQty(easyCountQtyFromLiters(EASY_COUNT_DEFAULT_UNIT_QTY, defaultEasyCountMeasureUnit));
+}
+
+function changeEasyCountMeasureUnit(
+  value: string,
+  currentUnit: EasyCountMeasureUnit,
+  nextUnit: EasyCountMeasureUnit
+) {
+  const currentLiters = easyCountQtyToLiters(value, currentUnit);
+  return formatEasyCountQty(easyCountQtyFromLiters(currentLiters, nextUnit));
+}
+
+function EasyCountUnitFields({
+  value,
+  unit,
+  onValueChange,
+  onUnitChange
+}: {
+  value: string;
+  unit: EasyCountMeasureUnit;
+  onValueChange: (value: string) => void;
+  onUnitChange: (unit: EasyCountMeasureUnit) => void;
+}) {
+  const unitLabels: Record<EasyCountMeasureUnit, string> = {
+    Liter: 'Liter (L)',
+    Milliliter: 'Milliliter (ml)',
+    Centiliter: 'Centiliter (cl)'
+  };
+  const quantityPerPoint = easyCountQtyToLiters(value, unit);
+
+  return (
+    <>
+      <div className="form-grid">
+        <label>
+          Menge pro Punkt
+          <input type="number" min="0" step="0.001" value={value} onChange={(event) => onValueChange(event.target.value)} />
+        </label>
+        <label>
+          Einheit
+          <select value={unit} onChange={(event) => onUnitChange(event.target.value as EasyCountMeasureUnit)}>
+            {easyCountMeasureUnits.map((measureUnit) => (
+              <option key={measureUnit} value={measureUnit}>
+                {unitLabels[measureUnit]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <small>{easyCountPresetSummary(quantityPerPoint)}. Pro Produkt einstellbar; unter 5 Punkten wird ignoriert.</small>
+    </>
+  );
+}
+
 function ProductForm({
   onCreateProduct
 }: {
@@ -1185,7 +1254,8 @@ function ProductForm({
     parLevel: '0',
     reorderPoint: '0',
     isEasyCount: false,
-    easyCountUnitQty: '1'
+    easyCountUnitQty: defaultEasyCountDisplayQty(),
+    easyCountMeasureUnit: defaultEasyCountMeasureUnit
   });
 
   function submit(event: FormEvent) {
@@ -1199,7 +1269,7 @@ function ProductForm({
       parLevel: Number(form.parLevel || 0),
       reorderPoint: Number(form.reorderPoint || 0),
       isEasyCount: form.isEasyCount,
-      easyCountUnitQty: Number(form.easyCountUnitQty || 1)
+      easyCountUnitQty: easyCountQtyToLiters(form.easyCountUnitQty, form.easyCountMeasureUnit)
     });
     setForm({ ...form, name: '', parLevel: '0', reorderPoint: '0' });
   }
@@ -1253,14 +1323,31 @@ function ProductForm({
         <input type="number" min="0" step="0.001" value={form.reorderPoint} onChange={(event) => setForm({ ...form, reorderPoint: event.target.value })} />
       </label>
       <label className="check-row compact">
-        <input type="checkbox" checked={form.isEasyCount} onChange={(event) => setForm({ ...form, isEasyCount: event.target.checked })} />
+        <input
+          type="checkbox"
+          checked={form.isEasyCount}
+          onChange={(event) => setForm({
+            ...form,
+            isEasyCount: event.target.checked,
+            unit: event.target.checked ? 'Liter' : form.unit,
+            containerUnit: event.target.checked ? 'Liter' : form.containerUnit,
+            easyCountUnitQty: event.target.checked ? defaultEasyCountDisplayQty() : form.easyCountUnitQty,
+            easyCountMeasureUnit: event.target.checked ? defaultEasyCountMeasureUnit : form.easyCountMeasureUnit
+          })}
+        />
         <span>Easy Count</span>
       </label>
       {form.isEasyCount && (
-        <label>
-          Menge pro Punkt
-          <input type="number" min="0" step="0.001" value={form.easyCountUnitQty} onChange={(event) => setForm({ ...form, easyCountUnitQty: event.target.value })} />
-        </label>
+        <EasyCountUnitFields
+          value={form.easyCountUnitQty}
+          unit={form.easyCountMeasureUnit}
+          onValueChange={(value) => setForm({ ...form, easyCountUnitQty: value })}
+          onUnitChange={(unit) => setForm({
+            ...form,
+            easyCountUnitQty: changeEasyCountMeasureUnit(form.easyCountUnitQty, form.easyCountMeasureUnit, unit),
+            easyCountMeasureUnit: unit
+          })}
+        />
       )}
       <button className="primary-button" type="submit">
         <Plus size={18} />
@@ -1300,7 +1387,7 @@ function ProductEditor({
       parLevel: Number(form.parLevel || 0),
       reorderPoint: Number(form.reorderPoint || 0),
       isEasyCount: form.isEasyCount,
-      easyCountUnitQty: Number(form.easyCountUnitQty || 1)
+      easyCountUnitQty: easyCountQtyToLiters(form.easyCountUnitQty, form.easyCountMeasureUnit)
     });
     setEditingProductId('');
   }
@@ -1362,14 +1449,31 @@ function ProductEditor({
                   </label>
                 </div>
                 <label className="check-row compact">
-                  <input type="checkbox" checked={form.isEasyCount} onChange={(event) => setForm({ ...form, isEasyCount: event.target.checked })} />
+                  <input
+                    type="checkbox"
+                    checked={form.isEasyCount}
+                    onChange={(event) => setForm({
+                      ...form,
+                      isEasyCount: event.target.checked,
+                      unit: event.target.checked ? 'Liter' : form.unit,
+                      containerUnit: event.target.checked ? 'Liter' : form.containerUnit,
+                      easyCountUnitQty: event.target.checked ? defaultEasyCountDisplayQty() : form.easyCountUnitQty,
+                      easyCountMeasureUnit: event.target.checked ? defaultEasyCountMeasureUnit : form.easyCountMeasureUnit
+                    })}
+                  />
                   <span>Easy Count</span>
                 </label>
                 {form.isEasyCount && (
-                  <label>
-                    Menge pro Punkt
-                    <input type="number" min="0" step="0.001" value={form.easyCountUnitQty} onChange={(event) => setForm({ ...form, easyCountUnitQty: event.target.value })} />
-                  </label>
+                  <EasyCountUnitFields
+                    value={form.easyCountUnitQty}
+                    unit={form.easyCountMeasureUnit}
+                    onValueChange={(value) => setForm({ ...form, easyCountUnitQty: value })}
+                    onUnitChange={(unit) => setForm({
+                      ...form,
+                      easyCountUnitQty: changeEasyCountMeasureUnit(form.easyCountUnitQty, form.easyCountMeasureUnit, unit),
+                      easyCountMeasureUnit: unit
+                    })}
+                  />
                 )}
                 <div className="button-row">
                   <button className="primary-button" type="submit">

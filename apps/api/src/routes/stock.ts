@@ -3,6 +3,16 @@ import { Type } from '@sinclair/typebox';
 import { prisma } from '@pub-o/database';
 import { requireAuth, requireLocationAccess } from '../auth.js';
 
+const EASY_COUNT_MINIMUM_POINTS = 5;
+const EASY_COUNT_DEFAULT_UNIT_QTY = 0.05;
+
+function normalizeEasyCountPoints(value: number) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return 0;
+  }
+  return Math.floor(value / EASY_COUNT_MINIMUM_POINTS) * EASY_COUNT_MINIMUM_POINTS;
+}
+
 const stockCountBody = Type.Object({
   locationId: Type.String({ format: 'uuid' }),
   note: Type.Optional(Type.String()),
@@ -189,10 +199,13 @@ export async function stockRoutes(app: FastifyInstance) {
 
       for (const line of body.lines) {
         const product = productsById.get(line.productId);
-        const quantityPerPoint = Number(product?.easyCountUnitQty ?? 1);
-        const differenceCount = line.targetCount - line.registerCount;
+        const quantityPerPoint = Number(product?.easyCountUnitQty ?? EASY_COUNT_DEFAULT_UNIT_QTY) || EASY_COUNT_DEFAULT_UNIT_QTY;
+        const targetCount = normalizeEasyCountPoints(line.targetCount);
+        const registerCount = normalizeEasyCountPoints(line.registerCount);
+        const startingCount = normalizeEasyCountPoints(line.startingCount);
+        const differenceCount = targetCount - registerCount;
         const correctionQty = differenceCount * quantityPerPoint;
-        const targetQty = line.targetCount * quantityPerPoint;
+        const targetQty = targetCount * quantityPerPoint;
 
         const current = await tx.stockItem.findUnique({
           where: {
@@ -233,9 +246,9 @@ export async function stockRoutes(app: FastifyInstance) {
           data: {
             easyCountRunId: run.id,
             productId: line.productId,
-            startingCount: line.startingCount,
-            targetCount: line.targetCount,
-            registerCount: line.registerCount,
+            startingCount,
+            targetCount,
+            registerCount,
             differenceCount,
             quantityPerPoint,
             correctionQty

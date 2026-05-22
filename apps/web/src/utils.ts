@@ -1,4 +1,11 @@
 import { Product } from './types';
+import {
+  easyCountPresetSummary,
+  easyCountQtyFromLiters,
+  easyCountUnitQty,
+  formatEasyCountQty,
+  inferEasyCountMeasureUnit
+} from './easyCount';
 
 export function formatPackage(product: Product) {
   const size = Number(product.containerSize ?? 0);
@@ -17,6 +24,8 @@ export function formatNullableAmount(value: Product[keyof Product]) {
 }
 
 export function productToForm(product?: Product) {
+  const easyCountMeasureUnit = inferEasyCountMeasureUnit(product?.easyCountUnitQty);
+
   return {
     name: product?.name ?? '',
     unit: formatUnitLabel(product?.unit ?? 'Stück'),
@@ -26,7 +35,8 @@ export function productToForm(product?: Product) {
     parLevel: String(product?.parLevel ?? '0'),
     reorderPoint: String(product?.reorderPoint ?? '0'),
     isEasyCount: product?.isEasyCount ?? false,
-    easyCountUnitQty: String(product?.easyCountUnitQty ?? '1')
+    easyCountUnitQty: formatEasyCountQty(easyCountQtyFromLiters(product?.easyCountUnitQty, easyCountMeasureUnit)),
+    easyCountMeasureUnit
   };
 }
 
@@ -46,8 +56,11 @@ export function formatUnitLabel(unit?: string | number | null) {
 }
 
 export function formatPointDefinition(product: Product) {
-  const unitQty = Number(product.easyCountUnitQty ?? 1) || 1;
+  const unitQty = easyCountUnitQty(product.easyCountUnitQty);
   const unit = formatUnitLabel(product.unit);
+  if (unit === 'Liter' && unitQty > 0) {
+    return easyCountPresetSummary(unitQty);
+  }
   if (unit === 'Milliliter' && unitQty === 100) {
     return '1 Punkt = 100 ml';
   }
