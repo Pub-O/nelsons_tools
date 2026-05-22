@@ -44,6 +44,10 @@ if docker_cmd inspect "$CLOUDFLARED_CONTAINER" >/dev/null 2>&1; then
   docker_cmd network connect "$NETWORK" "$CLOUDFLARED_CONTAINER" >/dev/null 2>&1 || true
 fi
 
+for CLOUDFLARED in $(docker_cmd ps --filter ancestor=cloudflare/cloudflared:latest --format '{{.Names}}'); do
+  docker_cmd network connect "$NETWORK" "$CLOUDFLARED" >/dev/null 2>&1 || true
+done
+
 docker_cmd build -t "$API_IMAGE" -f apps/api/Dockerfile .
 docker_cmd build -t "$WEB_IMAGE" -f apps/web/Dockerfile .
 
