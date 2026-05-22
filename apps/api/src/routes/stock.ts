@@ -3,14 +3,13 @@ import { Type } from '@sinclair/typebox';
 import { prisma } from '@pub-o/database';
 import { requireAuth, requireLocationAccess } from '../auth.js';
 
-const EASY_COUNT_MINIMUM_POINTS = 5;
-const EASY_COUNT_DEFAULT_UNIT_QTY = 0.05;
+const EASY_COUNT_DEFAULT_UNIT_QTY = 0.1;
 
 function normalizeEasyCountPoints(value: number) {
   if (!Number.isFinite(value) || value <= 0) {
     return 0;
   }
-  return Math.floor(value / EASY_COUNT_MINIMUM_POINTS) * EASY_COUNT_MINIMUM_POINTS;
+  return Math.round(value * 1000) / 1000;
 }
 
 const stockCountBody = Type.Object({

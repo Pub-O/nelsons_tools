@@ -3,7 +3,7 @@ import { Type } from '@sinclair/typebox';
 import { prisma } from '@pub-o/database';
 import { requireAuth, requireOrganizationManager } from '../auth.js';
 
-const EASY_COUNT_DEFAULT_UNIT_QTY = 0.05;
+const EASY_COUNT_DEFAULT_UNIT_QTY = 0.1;
 
 const productBody = Type.Object({
   organizationId: Type.String({ format: 'uuid' }),

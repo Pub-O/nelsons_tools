@@ -21,7 +21,7 @@ import {
 import { Checklists } from './modules/checklists/Checklists';
 import {
   EASY_COUNT_DEFAULT_UNIT_QTY,
-  EASY_COUNT_MINIMUM_POINTS,
+  EASY_COUNT_POINT_STEP,
   type EasyCountMeasureUnit,
   easyCountMeasureUnits,
   easyCountPresetSummary,
@@ -852,14 +852,14 @@ function EasyCount({
               <div className="form-grid">
                 <label>
                   Lagerstand
-                  <input type="number" min="0" step={EASY_COUNT_MINIMUM_POINTS} value={row.targetCount} onChange={(event) => onChange(product.id, 'targetCount', event.target.value)} />
+                  <input type="number" min="0" step={EASY_COUNT_POINT_STEP} value={row.targetCount} onChange={(event) => onChange(product.id, 'targetCount', event.target.value)} />
                 </label>
                 <label>
                   Kassastand
-                  <input type="number" min="0" step={EASY_COUNT_MINIMUM_POINTS} value={row.registerCount} onChange={(event) => onChange(product.id, 'registerCount', event.target.value)} />
+                  <input type="number" min="0" step={EASY_COUNT_POINT_STEP} value={row.registerCount} onChange={(event) => onChange(product.id, 'registerCount', event.target.value)} />
                 </label>
               </div>
-              <small>{easyCountPresetSummary(quantityPerPoint)}. Unter 5 Punkten wird ignoriert.</small>
+              <small>{easyCountPresetSummary(quantityPerPoint)}. Dezimalpunkte sind möglich.</small>
               <small>Nachzubonnieren: {formatAmount(correction)} {formatUnitLabel(product.unit)}</small>
             </article>
           );
@@ -1221,7 +1221,7 @@ function EasyCountUnitFields({
     <>
       <div className="form-grid">
         <label>
-          Menge pro Punkt
+          Menge pro Standpunkt
           <input type="number" min="0" step="0.001" value={value} onChange={(event) => onValueChange(event.target.value)} />
         </label>
         <label>
@@ -1235,7 +1235,7 @@ function EasyCountUnitFields({
           </select>
         </label>
       </div>
-      <small>{easyCountPresetSummary(quantityPerPoint)}. Pro Produkt einstellbar; unter 5 Punkten wird ignoriert.</small>
+      <small>{easyCountPresetSummary(quantityPerPoint)}. Pro Produkt einstellbar; Dezimalpunkte sind möglich.</small>
     </>
   );
 }

@@ -1,5 +1,5 @@
-export const EASY_COUNT_DEFAULT_UNIT_QTY = 0.05;
-export const EASY_COUNT_MINIMUM_POINTS = 5;
+export const EASY_COUNT_DEFAULT_UNIT_QTY = 0.1;
+export const EASY_COUNT_POINT_STEP = 0.5;
 
 export type EasyCountMeasureUnit = 'Liter' | 'Milliliter' | 'Centiliter';
 
@@ -7,15 +7,21 @@ export const easyCountMeasureUnits: EasyCountMeasureUnit[] = ['Liter', 'Millilit
 
 export const easyCountPresets = [
   {
-    name: 'Glas Spritzer',
-    points: 5,
+    name: 'Viertel',
+    points: 2.5,
     liters: 0.25,
+    totalLiters: 0.25
+  },
+  {
+    name: 'Glas',
+    points: 5,
+    liters: 0.5,
     totalLiters: 0.5
   },
   {
-    name: 'Pitcher Spritzer',
+    name: 'Pitcher',
     points: 15,
-    liters: 0.75,
+    liters: 1.5,
     totalLiters: 1.5
   }
 ];
@@ -67,13 +73,13 @@ export function normalizeEasyCountPoints(value: string | number) {
   if (!Number.isFinite(numeric) || numeric <= 0) {
     return 0;
   }
-  return Math.floor(numeric / EASY_COUNT_MINIMUM_POINTS) * EASY_COUNT_MINIMUM_POINTS;
+  return Math.round(numeric * 1000) / 1000;
 }
 
 export function easyCountPresetSummary(unitQtyInput?: string | number | null) {
   const unitQty = easyCountUnitQty(unitQtyInput);
   return easyCountPresets
-    .map((preset) => `${preset.name}: ${preset.points} Punkte = ${formatLiters(preset.points * unitQty)} Liter Weißwein`)
+    .map((preset) => `${preset.name}: ${formatLiters(preset.points)} Punkte = ${formatLiters(preset.points * unitQty)} Liter`)
     .join(', ');
 }
 
