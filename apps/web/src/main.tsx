@@ -55,9 +55,7 @@ import {
 } from './utils';
 import './styles.css';
 
-const apiBase = window.location.hostname === 'int-web.pub-o.com'
-  ? 'https://int-api.pub-o.com/api'
-  : '/api';
+const apiBase = '/api';
 
 type AppArea = 'app' | 'admin';
 type AdminTab = 'overview' | 'modules' | 'products' | 'team' | 'location';

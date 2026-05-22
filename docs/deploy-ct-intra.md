@@ -20,7 +20,7 @@ Edit `.env.ct-intra` and replace all secrets:
 POSTGRES_PASSWORD=...
 JWT_ACCESS_SECRET=...
 JWT_REFRESH_SECRET=...
-CORS_ORIGIN=http://ct-intra:8080,https://int-web.pub-o.com
+CORS_ORIGIN=https://int-web.pub-o.com
 PUBO_HTTP_PORT=8080
 ```
 
@@ -57,6 +57,14 @@ The app is then available at:
 ```text
 http://ct-intra:8080
 ```
+
+Public access should use the Cloudflare Tunnel URL:
+
+```text
+https://int-web.pub-o.com
+```
+
+The browser-facing app uses same-origin API calls through `https://int-web.pub-o.com/api/*`, so a separate public API hostname is not required for normal app use.
 
 If port `80` is free on `ct-intra`, set this in `.env.ct-intra`:
 
@@ -123,3 +131,28 @@ API docs:
 ```text
 http://ct-intra:8080/docs
 ```
+
+## 5. HTTPS and Cloudflare Tunnel Settings
+
+The Docker-side origin remains plain HTTP inside the private Docker network. Public HTTPS is terminated by Cloudflare Tunnel, and Nginx adds strict browser security headers.
+
+Recommended Cloudflare settings for `int-web.pub-o.com`:
+
+- Route only `https://int-web.pub-o.com` to the Pub-O service.
+- Tunnel service target: `http://pubo_web:80` if cloudflared is attached to `pubo_network`, or `http://ct-intra:8080` from the host network.
+- SSL/TLS mode: Full.
+- Edge Certificates: Always Use HTTPS enabled.
+- Minimum TLS version: TLS 1.2 or newer.
+- Automatic HTTPS Rewrites enabled.
+- HSTS enabled only after confirming the hostname works over HTTPS. Suggested values: `max-age=31536000`, include subdomains, preload.
+
+The app also sends these headers from Nginx:
+
+- `Strict-Transport-Security`
+- `Content-Security-Policy`
+- `X-Frame-Options`
+- `X-Content-Type-Options`
+- `Referrer-Policy`
+- `Permissions-Policy`
+- `Cross-Origin-Opener-Policy`
+- `Cross-Origin-Resource-Policy`
