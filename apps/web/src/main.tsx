@@ -68,8 +68,9 @@ import {
 } from './utils';
 import './styles.css';
 
-const appOrigin = 'https://int.app.pub-o.com';
-const dashboardOrigin = 'https://int.dash.pub-o.com';
+const publicProtocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+const appOrigin = `${publicProtocol}//int.app.pub-o.com`;
+const dashboardOrigin = `${publicProtocol}//int.dash.pub-o.com`;
 const currentHost = window.location.hostname;
 const isPublicAppHost = currentHost === 'int.app.pub-o.com';
 const isPublicDashboardHost = currentHost === 'int.dash.pub-o.com';
