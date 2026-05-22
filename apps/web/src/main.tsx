@@ -68,13 +68,22 @@ import {
 } from './utils';
 import './styles.css';
 
-const apiBase = '/api';
+const appOrigin = 'https://int.app.pub-o.com';
+const dashboardOrigin = 'https://int.dash.pub-o.com';
+const publicApiOrigin = 'https://int.api.pub-o.com';
+const localHosts = new Set(['localhost', '127.0.0.1', '0.0.0.0', 'ct-intra']);
+const currentHost = window.location.hostname;
+const isPublicAppHost = currentHost === 'int.app.pub-o.com';
+const isPublicDashboardHost = currentHost === 'int.dash.pub-o.com';
+const isPublicSplitHost = isPublicAppHost || isPublicDashboardHost;
+const apiBase = localHosts.has(currentHost) ? '/api' : `${publicApiOrigin}/api`;
 
 type AppArea = 'app' | 'admin';
 type AdminTab = 'overview' | 'modules' | 'products' | 'team' | 'location';
 
 function App() {
-  const [activeArea, setActiveArea] = useState<AppArea>('app');
+  const initialArea: AppArea = isPublicDashboardHost ? 'admin' : 'app';
+  const [activeArea, setActiveArea] = useState<AppArea>(initialArea);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [activeAdminTab, setActiveAdminTab] = useState<AdminTab>('overview');
   const [token, setToken] = useState(() => localStorage.getItem('puboAccessToken') ?? '');
@@ -251,9 +260,9 @@ function App() {
   function handleAuthenticated(accessToken: string) {
     localStorage.setItem('puboAccessToken', accessToken);
     setToken(accessToken);
-    setActiveArea('admin');
+    setActiveArea(initialArea);
     setActiveAdminTab('overview');
-    setStatus('Admin-Zugang aktiv.');
+    setStatus(initialArea === 'admin' ? 'Admin-Zugang aktiv.' : 'App-Zugang aktiv.');
   }
 
   function logout() {
@@ -269,7 +278,7 @@ function App() {
     setEasyCountRuns([]);
     setScheduleShifts([]);
     setVacations([]);
-    setActiveArea('app');
+    setActiveArea(initialArea);
     setActiveTab('dashboard');
     setActiveAdminTab('overview');
   }
@@ -525,13 +534,25 @@ function App() {
           </div>
         </div>
         <div className="top-actions">
-          {activeArea === 'admin' && (
+          {isPublicSplitHost && activeArea === 'admin' && (
+            <a className="text-button compact-button" href={appOrigin}>
+              <Home size={17} />
+              App
+            </a>
+          )}
+          {isPublicSplitHost && activeArea === 'app' && (
+            <a className="text-button compact-button" href={dashboardOrigin}>
+              <ShieldCheck size={17} />
+              Admin
+            </a>
+          )}
+          {!isPublicSplitHost && activeArea === 'admin' && (
             <button className="text-button compact-button" type="button" onClick={() => setActiveArea('app')}>
               <Home size={17} />
               App
             </button>
           )}
-          {activeArea === 'app' && (
+          {!isPublicSplitHost && activeArea === 'app' && (
             <button className="text-button compact-button" type="button" onClick={() => setActiveArea('admin')}>
               <ShieldCheck size={17} />
               Admin
@@ -547,34 +568,54 @@ function App() {
 
       <section className="content">
         {status && <div className="status-line">{status}</div>}
-        {activeArea === 'app' ? (
-          <AppWorkspace
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            lowStock={lowStock}
-            products={inventory}
-            productCount={products.length}
-            employeeCount={employees.length}
-            shiftCount={scheduleShifts.length}
-            activeLocationName={activeLocation?.name}
-            counts={counts}
-            setCounts={setCounts}
-            easyCountProducts={easyCountProducts}
-            easyCounts={easyCounts}
-            setEasyCounts={setEasyCounts}
-            easyCountRuns={easyCountRuns}
-            scheduleMonth={scheduleMonth}
-            scheduleShifts={scheduleShifts}
-            vacations={vacations}
-            employees={employees}
-            setScheduleMonth={setScheduleMonth}
-            createShift={createShift}
-            createVacation={createVacation}
-            saveEasyCount={saveEasyCount}
-            saveStockCount={saveStockCount}
-          />
+        {!token ? (
+          <AuthPanel onAuthenticated={handleAuthenticated} setStatus={setStatus} />
+        ) : activeArea === 'app' ? (
+          isPublicDashboardHost ? (
+            <HostRedirectNotice
+              title="App getrennt"
+              text="Die nutzbare App läuft auf int.app.pub-o.com."
+              href={appOrigin}
+              label="Zur App"
+              icon={<Home size={18} />}
+            />
+          ) : (
+            <AppWorkspace
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              lowStock={lowStock}
+              products={inventory}
+              productCount={products.length}
+              employeeCount={employees.length}
+              shiftCount={scheduleShifts.length}
+              activeLocationName={activeLocation?.name}
+              counts={counts}
+              setCounts={setCounts}
+              easyCountProducts={easyCountProducts}
+              easyCounts={easyCounts}
+              setEasyCounts={setEasyCounts}
+              easyCountRuns={easyCountRuns}
+              scheduleMonth={scheduleMonth}
+              scheduleShifts={scheduleShifts}
+              vacations={vacations}
+              employees={employees}
+              setScheduleMonth={setScheduleMonth}
+              createShift={createShift}
+              createVacation={createVacation}
+              saveEasyCount={saveEasyCount}
+              saveStockCount={saveStockCount}
+            />
+          )
         ) : (
-          token ? (
+          isPublicAppHost ? (
+            <HostRedirectNotice
+              title="Admin getrennt"
+              text="Das Admin Dashboard läuft auf int.dash.pub-o.com."
+              href={dashboardOrigin}
+              label="Zum Admin Dashboard"
+              icon={<ShieldCheck size={18} />}
+            />
+          ) : (
             <AdminWorkspace
               activeAdminTab={activeAdminTab}
               setActiveAdminTab={setActiveAdminTab}
@@ -588,13 +629,11 @@ function App() {
               onUpdateProduct={updateProduct}
               onCreateEmployee={createEmployee}
             />
-          ) : (
-            <AuthPanel onAuthenticated={handleAuthenticated} setStatus={setStatus} />
           )
         )}
       </section>
 
-      {activeArea === 'app' && (
+      {token && activeArea === 'app' && !isPublicDashboardHost && (
         <nav className="bottom-nav" aria-label="Hauptnavigation">
           {navigationModules.map((module) => (
             <NavButton tab={module.id} activeTab={activeTab} label={module.shortLabel} onClick={setActiveTab} key={module.id}>
@@ -879,6 +918,33 @@ function EasyCount({
           <small>{runs[0].lines.map((line) => `${line.product.name}: ${line.differenceCount >= 0 ? '+' : ''}${line.differenceCount}`).join(' · ')}</small>
         </div>
       )}
+    </section>
+  );
+}
+
+function HostRedirectNotice({
+  title,
+  text,
+  href,
+  label,
+  icon
+}: {
+  title: string;
+  text: string;
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <section className="section">
+      <div className="admin-summary">
+        <strong>{title}</strong>
+        <span>{text}</span>
+      </div>
+      <a className="primary-button" href={href}>
+        {icon}
+        {label}
+      </a>
     </section>
   );
 }

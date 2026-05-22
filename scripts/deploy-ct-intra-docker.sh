@@ -24,7 +24,7 @@ set +a
 : "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}"
 : "${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required}"
 : "${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}"
-: "${CORS_ORIGIN:=http://ct-intra}"
+: "${CORS_ORIGIN:=http://ct-intra,https://int.app.pub-o.com,https://int.dash.pub-o.com}"
 : "${PUBO_HTTP_PORT:=8080}"
 
 NETWORK="${APP_NAME}_network"
