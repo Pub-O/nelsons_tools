@@ -772,7 +772,7 @@ function Stock({
               </div>
               <small>Ziel: {product.target || '-'} {formatStockTargetUnit(product)}</small>
               {product.isEasyCount && (
-                <small>Last Count: {formatAmount(product.current / easyCountUnitQty(product.easyCountUnitQty))} Punkte · {formatPointDefinition(product)}</small>
+                <small>Last Count: {formatAmount(product.current / easyCountUnitQty(product.easyCountUnitQty))} Points | {formatPointDefinition(product)}</small>
               )}
             </article>
           );

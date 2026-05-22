@@ -1,6 +1,5 @@
 import { Product } from './types';
 import {
-  easyCountPresetSummary,
   easyCountQtyFromLiters,
   easyCountUnitQty,
   formatEasyCountQty,
@@ -61,20 +60,10 @@ export function formatStockTargetUnit(product: Product) {
 
 export function formatPointDefinition(product: Product) {
   const unitQty = easyCountUnitQty(product.easyCountUnitQty);
-  const unit = formatUnitLabel(product.unit);
-  if (unit === 'Liter' && unitQty > 0) {
-    return easyCountPresetSummary(unitQty);
+  if (unitQty < 1) {
+    return `1 Point = ${formatAmount(unitQty * 1000)} ml`;
   }
-  if (unit === 'Milliliter' && unitQty === 100) {
-    return '1 Punkt = 100 ml';
-  }
-  if (unit === 'Liter' && Math.abs(unitQty - 0.125) < 0.001) {
-    return '1 Punkt = 1/8 Liter';
-  }
-  if (unit === 'Milliliter' && unitQty === 20) {
-    return '1 Punkt = 2 cl';
-  }
-  return `1 Punkt = ${formatAmount(unitQty)} ${unit}`;
+  return `1 Point = ${formatAmount(unitQty)} L`;
 }
 
 export function startOfMonth(date: Date) {
