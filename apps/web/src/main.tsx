@@ -913,14 +913,31 @@ function AuthPanel({
   return (
     <section className="section">
       <h2>{mode === 'login' ? 'Admin Login' : 'Admin Setup'}</h2>
-      <form className="form-card" onSubmit={submit}>
+      <form className="form-card" onSubmit={submit} autoComplete={mode === 'login' ? 'on' : 'off'}>
         <label>
-          E-Mail
-          <input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} required />
+          {mode === 'login' ? 'Login E-Mail' : 'E-Mail'}
+          <input
+            id="login-email"
+            name="email"
+            type="email"
+            autoComplete={mode === 'login' ? 'username' : 'off'}
+            value={form.email}
+            onChange={(event) => setForm({ ...form, email: event.target.value })}
+            required
+          />
         </label>
         <label>
-          Passwort
-          <input type="password" minLength={8} value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required />
+          {mode === 'login' ? 'Login Passwort' : 'Passwort'}
+          <input
+            id="login-password"
+            name="password"
+            type="password"
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            minLength={8}
+            value={form.password}
+            onChange={(event) => setForm({ ...form, password: event.target.value })}
+            required
+          />
         </label>
         {mode === 'register' && (
           <>
