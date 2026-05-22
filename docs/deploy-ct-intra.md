@@ -140,6 +140,7 @@ Recommended Cloudflare settings for `int-web.pub-o.com`:
 
 - Route only `https://int-web.pub-o.com` to the Pub-O service.
 - Tunnel service target: `http://pubo_web:80` if cloudflared is attached to `pubo_network`, or `http://ct-intra:8080` from the host network.
+- The deploy script also adds the Docker network alias `pub_o` to the web container for compatibility with Cloudflare-managed tunnel targets such as `http://pub_o:8080`.
 - SSL/TLS mode: Full.
 - Edge Certificates: Always Use HTTPS enabled.
 - Minimum TLS version: TLS 1.2 or newer.

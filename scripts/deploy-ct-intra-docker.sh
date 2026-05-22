@@ -93,6 +93,7 @@ docker_cmd run -d \
   --name "$WEB_CONTAINER" \
   --restart unless-stopped \
   --network "$NETWORK" \
+  --network-alias pub_o \
   -p "${PUBO_HTTP_PORT}:80" \
   "$WEB_IMAGE" >/dev/null
 
