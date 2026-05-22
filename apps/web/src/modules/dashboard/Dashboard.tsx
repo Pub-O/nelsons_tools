@@ -10,7 +10,7 @@ import {
   Package
 } from 'lucide-react';
 import { InventoryProduct, Tab } from '../../types';
-import { formatAmount, formatUnitLabel } from '../../utils';
+import { formatAmount, formatStockTargetUnit } from '../../utils';
 
 export function Dashboard({
   lowStock,
@@ -82,7 +82,7 @@ export function Dashboard({
               <span className="alert-icon"><AlertTriangle size={18} /></span>
               <span>
                 <strong>{product.name}</strong>
-                <small>{formatAmount(product.current)} von {formatAmount(product.target)} {formatUnitLabel(product.unit)}</small>
+                <small>{formatAmount(product.current)} von {formatAmount(product.target)} {formatStockTargetUnit(product)}</small>
               </span>
               <ArrowRight size={17} />
             </button>

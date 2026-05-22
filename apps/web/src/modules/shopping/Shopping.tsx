@@ -1,5 +1,5 @@
 import { InventoryProduct } from '../../types';
-import { formatUnitLabel } from '../../utils';
+import { formatStockTargetUnit } from '../../utils';
 import { EmptyState } from '../shared/EmptyState';
 
 export function Shopping({ lowStock }: { lowStock: InventoryProduct[] }) {
@@ -13,7 +13,7 @@ export function Shopping({ lowStock }: { lowStock: InventoryProduct[] }) {
             <div>
               <strong>{product.name}</strong>
               <span>
-                {Math.max(0, product.target - product.current)} {formatUnitLabel(product.unit)} bis Zielbestand
+                {Math.max(0, product.target - product.current)} {formatStockTargetUnit(product)} bis Zielbestand
               </span>
             </div>
             <input type="checkbox" aria-label={`${product.name} erledigt`} />

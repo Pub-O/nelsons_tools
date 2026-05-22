@@ -26,9 +26,9 @@ const easyCountBody = Type.Object({
   note: Type.Optional(Type.String()),
   lines: Type.Array(Type.Object({
     productId: Type.String({ format: 'uuid' }),
-    startingCount: Type.Integer({ minimum: 0 }),
-    targetCount: Type.Integer({ minimum: 0 }),
-    registerCount: Type.Integer({ minimum: 0 })
+    startingCount: Type.Number({ minimum: 0 }),
+    targetCount: Type.Number({ minimum: 0 }),
+    registerCount: Type.Number({ minimum: 0 })
   }), { minItems: 1 })
 });
 

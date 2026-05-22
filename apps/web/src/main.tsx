@@ -60,6 +60,7 @@ import {
   formatPackage,
   formatPointDefinition,
   formatShortDate,
+  formatStockTargetUnit,
   formatTime,
   formatUnitLabel,
   productToForm,
@@ -769,7 +770,7 @@ function Stock({
               <div className="stock-meter">
                 <span style={{ width: `${percentage}%` }} />
               </div>
-              <small>Ziel: {product.target || '-'} {formatUnitLabel(product.unit)}</small>
+              <small>Ziel: {product.target || '-'} {formatStockTargetUnit(product)}</small>
               {product.isEasyCount && (
                 <small>Last Count: {formatAmount(product.current / easyCountUnitQty(product.easyCountUnitQty))} Punkte · {formatPointDefinition(product)}</small>
               )}
@@ -1315,11 +1316,11 @@ function ProductForm({
         </label>
       </div>
       <label>
-        Zielbestand
+        Zielbestand ({formatUnitLabel(form.containerUnit)})
         <input type="number" min="0" step="0.001" value={form.parLevel} onChange={(event) => setForm({ ...form, parLevel: event.target.value })} />
       </label>
       <label>
-        Nachbestellen ab
+        Nachbestellen ab ({formatUnitLabel(form.containerUnit)})
         <input type="number" min="0" step="0.001" value={form.reorderPoint} onChange={(event) => setForm({ ...form, reorderPoint: event.target.value })} />
       </label>
       <label className="check-row compact">
@@ -1440,11 +1441,11 @@ function ProductEditor({
                 </div>
                 <div className="form-grid">
                   <label>
-                    Zielbestand
+                    Zielbestand ({formatUnitLabel(form.containerUnit)})
                     <input type="number" min="0" step="0.001" value={form.parLevel} onChange={(event) => setForm({ ...form, parLevel: event.target.value })} />
                   </label>
                   <label>
-                    Nachbestellen ab
+                    Nachbestellen ab ({formatUnitLabel(form.containerUnit)})
                     <input type="number" min="0" step="0.001" value={form.reorderPoint} onChange={(event) => setForm({ ...form, reorderPoint: event.target.value })} />
                   </label>
                 </div>
@@ -1489,7 +1490,7 @@ function ProductEditor({
               <>
                 <div>
                   <strong>{product.name}</strong>
-                  <span>{formatPackage(product)} · Ziel {formatNullableAmount(product.parLevel)} {formatUnitLabel(product.unit)}</span>
+                  <span>{formatPackage(product)} · Ziel {formatNullableAmount(product.parLevel)} {formatStockTargetUnit(product)}</span>
                   {product.isEasyCount && <small>Easy Count: {formatPointDefinition(product)}</small>}
                 </div>
                 <button className="text-button compact-button" type="button" onClick={() => startEditing(product)} aria-label={`${product.name} bearbeiten`}>

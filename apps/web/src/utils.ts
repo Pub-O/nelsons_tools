@@ -55,6 +55,10 @@ export function formatUnitLabel(unit?: string | number | null) {
   return labels[value] ?? value;
 }
 
+export function formatStockTargetUnit(product: Product) {
+  return formatUnitLabel(product.containerUnit ?? product.unit);
+}
+
 export function formatPointDefinition(product: Product) {
   const unitQty = easyCountUnitQty(product.easyCountUnitQty);
   const unit = formatUnitLabel(product.unit);
