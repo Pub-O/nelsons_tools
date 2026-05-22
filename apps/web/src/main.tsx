@@ -70,13 +70,11 @@ import './styles.css';
 
 const appOrigin = 'https://int.app.pub-o.com';
 const dashboardOrigin = 'https://int.dash.pub-o.com';
-const publicApiOrigin = 'https://int.api.pub-o.com';
-const localHosts = new Set(['localhost', '127.0.0.1', '0.0.0.0', 'ct-intra']);
 const currentHost = window.location.hostname;
 const isPublicAppHost = currentHost === 'int.app.pub-o.com';
 const isPublicDashboardHost = currentHost === 'int.dash.pub-o.com';
 const isPublicSplitHost = isPublicAppHost || isPublicDashboardHost;
-const apiBase = localHosts.has(currentHost) ? '/api' : `${publicApiOrigin}/api`;
+const apiBase = '/api';
 
 type AppArea = 'app' | 'admin';
 type AdminTab = 'overview' | 'modules' | 'products' | 'team' | 'location';
